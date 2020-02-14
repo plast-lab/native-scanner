@@ -3,8 +3,8 @@ strings in binary libraries, to inform static analyses.
 
 This library has the following modes:
 
-* binutils-based analysis: this assumes the existence of utilities
-  such as `nm`, 'objdump`, and `gdb`.
+* [binutils-based](https://www.gnu.org/software/binutils/) analysis: this assumes the existence of utilities
+  such as `nm`, `objdump`, and `gdb`.
 
 * Radare2-based analysis: this assumes the existence of a
   [Radare2](https://rada.re/) installation with
@@ -34,6 +34,7 @@ Maven repository:
 Add `mavenLocal()` as a repository in your application build.gradle
 and add dependency:
 
+```
 repositories {
   mavenLocal()
   ...
@@ -42,6 +43,7 @@ repositories {
 dependencies {
   implementation 'org.clyze:native-scanner:1.0.0'
 }
+```
 
 ### Binutils mode ###
 
