@@ -215,7 +215,7 @@ class RadareAnalysis extends BinaryAnalysis {
         else if (arch.equals("mips"))
             ret = Arch.MIPS;
 
-        if (arch == null || bits == null || ret == null) {
+        if (bits == null || ret == null) {
             ret = Arch.DEFAULT_ARCH;
             System.out.println("Could not determine architecture of " + lib + ", using default: " + ret);
         } else
