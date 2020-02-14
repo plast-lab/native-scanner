@@ -61,7 +61,7 @@ or equivalent binary SDK distribution).
 
 ### Radare2 mode ###
 
-For Radare2 mode, set environment variable RADARE_PY_SCRIPT to
+For Radare2 mode, set environment variable `RADARE_PY_SCRIPT` to
 point to the directory containing radare.py.
 
 ## Use ##
