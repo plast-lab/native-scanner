@@ -13,7 +13,7 @@ class BinutilsAnalysis extends BinaryAnalysis {
     // Check for the presence of some special symbols (statistic).
     private final static boolean check = false;
     // Demangle C++ entry points.
-    private final static boolean demangle = false;
+    private final boolean demangle;
     // Environment variables needed to find external tools.
     private static final String envVarARMEABI = "ARMEABI_TOOLCHAIN";
     private static final String toolchainARMEABI = System.getenv(envVarARMEABI);
@@ -26,8 +26,11 @@ class BinutilsAnalysis extends BinaryAnalysis {
     private String objdumpCmd;
 
     BinutilsAnalysis(NativeDatabaseConsumer dbc, String lib,
-                     boolean onlyPreciseNativeStrings, boolean truncateTo32Bits) {
+                     boolean onlyPreciseNativeStrings, boolean truncateTo32Bits,
+                     boolean demangle) {
         super(dbc, lib, onlyPreciseNativeStrings, truncateTo32Bits);
+
+        this.demangle = demangle;
 
         this.nmCmd = "nm";
         this.objdumpCmd = "objdump";

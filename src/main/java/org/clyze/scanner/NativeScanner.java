@@ -21,6 +21,8 @@ public class NativeScanner {
      *  do not support 64-bit integers (such as Doop using some builds
      *  of Souffle). */
     private final boolean truncateAddresses;
+    /** Support name demangling for some analysis back ends. */
+    private final boolean demangle;
 
     /**
      * Create a native scanner object, to be used for analyzing native
@@ -30,18 +32,24 @@ public class NativeScanner {
      * @param useRadare             if true, use Radare2
      * @param preciseNativeStrings  only keep native strings with enough information
      * @param truncateAddresses     truncate long addresses to 32 bits
+     * @param demangle              demangle names for library entry points (may
+     *                              not be supported for all analysis modes)
      * @param methodStrings         a list of method substrings (names and
      *                              type descriptors) to use for filtering -- set to
      *                              null to disable this filtering
      */
     public NativeScanner(NativeDatabaseConsumer dbc, boolean useRadare,
                          boolean preciseNativeStrings, boolean truncateAddresses,
-                         Set<String> methodStrings) {
+                         boolean demangle, Set<String> methodStrings) {
         this.dbc = dbc;
         this.useRadare = useRadare;
         this.onlyPreciseNativeStrings = preciseNativeStrings;
         this.truncateAddresses = truncateAddresses;
         this.methodStrings = methodStrings;
+        this.demangle = demangle;
+
+        if (useRadare && demangle)
+            System.err.println("WARNING: name demangling cannot be configured in Radare2 mode.");
 
         if (methodStrings != null)
             System.err.println("Initializing native scanner with " + methodStrings.size() + " strings related to methods.");
@@ -70,7 +78,7 @@ public class NativeScanner {
 
             BinaryAnalysis analysis = useRadare ?
                 new RadareAnalysis(dbc, lib, onlyPreciseNativeStrings, truncateAddresses)  :
-                new BinutilsAnalysis(dbc, lib, onlyPreciseNativeStrings, truncateAddresses);
+                new BinutilsAnalysis(dbc, lib, onlyPreciseNativeStrings, truncateAddresses, demangle);
 
             analysis.initEntryPoints();
 

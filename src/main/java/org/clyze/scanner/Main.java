@@ -15,6 +15,7 @@ public class Main {
     private static final String OPT_RADARE = "--radare";
     private static final String OPT_METHOD_STRINGS = "--method-strings=";
     private static final String OPT_TRUNCATE_ADDRESSES = "--truncate-addresses";
+    private static final String OPT_DEMANGLE_ENTRY_POINTS = "--demangle-entry-points";
 
     public static void main(String[] args) {
         if (args.length == 0) {
@@ -26,6 +27,7 @@ public class Main {
         boolean binutilsMode = false;
         boolean radareMode = false;
         boolean truncateAddresses = false;
+        boolean demangle = false;
         Set<String> methodStrings = null;
         List<File> inputs = new ArrayList<>();
         
@@ -41,6 +43,8 @@ public class Main {
                 binutilsMode = true;
             else if (OPT_TRUNCATE_ADDRESSES.equals(arg))
                 truncateAddresses = true;
+            else if (OPT_DEMANGLE_ENTRY_POINTS.equals(arg))
+                demangle = true;
             else if (arg.startsWith(OPT_METHOD_STRINGS)) {
                 File msFile = new File(arg.substring(OPT_METHOD_STRINGS.length()));
                 if (!msFile.exists()) {
@@ -72,7 +76,7 @@ public class Main {
 
         // A simple consumer to show the results on screen.
         NativeDatabaseConsumer dbc = new PrintDatabaseConsumer();
-        NativeScanner scanner = new NativeScanner(dbc, radareMode, onlyPreciseStrings, truncateAddresses, methodStrings);
+        NativeScanner scanner = new NativeScanner(dbc, radareMode, onlyPreciseStrings, truncateAddresses, demangle, methodStrings);
         for (File f : inputs)
             scanner.scanLib(f);
     }
@@ -86,5 +90,6 @@ public class Main {
         System.out.println("  " + OPT_RADARE + "                  Use Radare2 mode.");
         System.out.println("  " + OPT_TRUNCATE_ADDRESSES + "      Truncate addresses to fit in 32 bits.");
         System.out.println("  " + OPT_METHOD_STRINGS + "<FILE>   Use method strings from <FILE> for filtering." );
+        System.out.println("  " + OPT_DEMANGLE_ENTRY_POINTS + "   Demangle names of C++ entry points.");
     }
 }
