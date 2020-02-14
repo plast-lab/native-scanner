@@ -26,7 +26,7 @@ configurations.all {
 
 jar {
     manifest {
-        attributes 'Implementation-Version' : version
+        attributes 'Implementation-Version' : archiveVersion
     }
 }
 
