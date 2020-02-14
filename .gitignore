@@ -2,3 +2,4 @@
 .gradle
 \#*.java\#
 .\#*.java
+build
