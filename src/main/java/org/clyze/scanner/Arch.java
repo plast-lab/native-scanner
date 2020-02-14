@@ -1,7 +1,5 @@
 package org.clyze.scanner;
 
-import java.io.IOException;
-
 // The supported architectures.
 enum Arch {
     X86, X86_64, AARCH64, ARMEABI, MIPS;

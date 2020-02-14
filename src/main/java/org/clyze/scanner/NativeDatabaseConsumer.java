@@ -13,5 +13,5 @@ public interface NativeDatabaseConsumer {
      * @param arg     the value of the first column
      * @param args    the values of the rest of the columns
      */
-    public void add(String table, String arg, String... args);
+    void add(String table, String arg, String... args);
 }

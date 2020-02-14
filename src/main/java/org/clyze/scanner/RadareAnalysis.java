@@ -34,8 +34,7 @@ class RadareAnalysis extends BinaryAnalysis {
         List<String> args0 = new LinkedList<>();
         args0.add("python");
         args0.add(script);
-        for (String arg : args)
-            args0.add(arg);
+        args0.addAll(Arrays.asList(args));
 
         ProcessBuilder radareBuilder = new ProcessBuilder(args0.toArray(new String[0]));
         System.out.println("Radare command line: " + radareBuilder.command());
@@ -150,9 +149,9 @@ class RadareAnalysis extends BinaryAnalysis {
                 String vAddrStr = l.get(1);
                 String sizeStr = l.get(2);
                 String offsetStr = l.get(3);
-                long vAddr = UNKNOWN_ADDRESS;
-                int size = 0;
-                long offset = 0;
+                long vAddr;
+                int size;
+                long offset;
                 try {
                     vAddr = hexToLong(vAddrStr);
                     size = Integer.parseInt(sizeStr.trim());
@@ -175,7 +174,7 @@ class RadareAnalysis extends BinaryAnalysis {
         Consumer<ArrayList<String>> proc = (l -> {
                 String vAddrStr = l.get(0);
                 String name = l.get(1);
-                long vAddr = UNKNOWN_ADDRESS;
+                long vAddr;
                 try {
                     vAddr = hexToLong(vAddrStr);
                     entryPoints.put(vAddr, name);

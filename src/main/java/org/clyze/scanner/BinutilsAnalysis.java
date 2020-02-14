@@ -12,6 +12,8 @@ class BinutilsAnalysis extends BinaryAnalysis {
     private final static boolean debug = false;
     // Check for the presence of some special symbols (statistic).
     private final static boolean check = false;
+    // Demangle C++ entry points.
+    private final static boolean demangle = false;
     // Environment variables needed to find external tools.
     private static final String envVarARMEABI = "ARMEABI_TOOLCHAIN";
     private static final String toolchainARMEABI = System.getenv(envVarARMEABI);
@@ -450,6 +452,8 @@ class BinutilsAnalysis extends BinaryAnalysis {
                 long offset = BinaryAnalysis.hexToLong(parts[5]);
                 return new Section(secName, arch, lib, size, vma, offset);
             } catch (NumberFormatException ex) {
+                if (debug)
+                    System.err.println("NumberFormatException: " + ex.getMessage());
             }
         }
         System.err.println("WARNING: cannot find section " + sectionName + " from output:");
@@ -485,6 +489,7 @@ class BinutilsAnalysis extends BinaryAnalysis {
      *                  we use c++filt
      * @return          a list of lines containing entry points
      */
+    @SuppressWarnings("UseBulkOperation")
     private List<String> libSymbols(String lib, boolean demangle) throws IOException {
         List<String> ids = new LinkedList<>();
 
@@ -548,7 +553,7 @@ class BinutilsAnalysis extends BinaryAnalysis {
     public void initEntryPoints() throws IOException {
         // Demangling interacts poorly with libraries lacking
         // symbol tables and is thus turned off.
-        List<String> symbols = libSymbols(lib, false);
+        List<String> symbols = libSymbols(lib, demangle);
         if (check)
             checkSymbols(symbols, lib);
         for (String symbol : symbols) {
