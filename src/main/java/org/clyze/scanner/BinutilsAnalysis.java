@@ -25,8 +25,9 @@ class BinutilsAnalysis extends BinaryAnalysis {
     // The path to tool 'objdump'.
     private String objdumpCmd;
 
-    BinutilsAnalysis(NativeDatabaseConsumer dbc, String lib, boolean onlyPreciseNativeStrings) {
-        super(dbc, lib, onlyPreciseNativeStrings);
+    BinutilsAnalysis(NativeDatabaseConsumer dbc, String lib,
+                     boolean onlyPreciseNativeStrings, boolean truncateTo32Bits) {
+        super(dbc, lib, onlyPreciseNativeStrings, truncateTo32Bits);
 
         this.nmCmd = "nm";
         this.objdumpCmd = "objdump";

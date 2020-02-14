@@ -19,8 +19,9 @@ class RadareAnalysis extends BinaryAnalysis {
     private static final String EP_MARKER = "ENTRY_POINT:";
     private static final String INFO_MARKER = "INFO:";
 
-    RadareAnalysis(NativeDatabaseConsumer dbc, String lib, boolean onlyPreciseNativeStrings) {
-        super(dbc, lib, onlyPreciseNativeStrings);
+    RadareAnalysis(NativeDatabaseConsumer dbc, String lib,
+                   boolean onlyPreciseNativeStrings, boolean truncateTo32Bits) {
+        super(dbc, lib, onlyPreciseNativeStrings, truncateTo32Bits);
     }
     
     private static void runRadare(String... args) throws IOException {

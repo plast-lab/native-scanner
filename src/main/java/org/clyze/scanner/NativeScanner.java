@@ -17,6 +17,10 @@ public class NativeScanner {
      *  improves precision. */
     private final boolean onlyPreciseNativeStrings;
     private final Set<String> methodStrings;
+    /** Truncate long addresses to fit 32 bits. Used for clients that
+     *  do not support 64-bit integers (such as Doop using some builds
+     *  of Souffle). */
+    private final boolean truncateAddresses;
 
     /**
      * Create a native scanner object, to be used for analyzing native
@@ -25,15 +29,18 @@ public class NativeScanner {
      * @param dbc                   the database consumer to receive the results
      * @param useRadare             if true, use Radare2
      * @param preciseNativeStrings  only keep native strings with enough information
+     * @param truncateAddresses     truncate long addresses to 32 bits
      * @param methodStrings         a list of method substrings (names and
      *                              type descriptors) to use for filtering -- set to
      *                              null to disable this filtering
      */
     public NativeScanner(NativeDatabaseConsumer dbc, boolean useRadare,
-                         boolean preciseNativeStrings, Set<String> methodStrings) {
+                         boolean preciseNativeStrings, boolean truncateAddresses,
+                         Set<String> methodStrings) {
         this.dbc = dbc;
         this.useRadare = useRadare;
         this.onlyPreciseNativeStrings = preciseNativeStrings;
+        this.truncateAddresses = truncateAddresses;
         this.methodStrings = methodStrings;
 
         if (methodStrings != null)
@@ -62,8 +69,8 @@ public class NativeScanner {
             System.out.println("== Processing library: " + lib + " ==");
 
             BinaryAnalysis analysis = useRadare ?
-                new RadareAnalysis(dbc, lib, onlyPreciseNativeStrings)  :
-                new BinutilsAnalysis(dbc, lib, onlyPreciseNativeStrings);
+                new RadareAnalysis(dbc, lib, onlyPreciseNativeStrings, truncateAddresses)  :
+                new BinutilsAnalysis(dbc, lib, onlyPreciseNativeStrings, truncateAddresses);
 
             analysis.initEntryPoints();
 

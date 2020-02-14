@@ -14,6 +14,7 @@ public class Main {
     private static final String OPT_BINUTILS = "--binutils";
     private static final String OPT_RADARE = "--radare";
     private static final String OPT_METHOD_STRINGS = "--method-strings=";
+    private static final String OPT_TRUNCATE_ADDRESSES = "--truncate-addresses";
 
     public static void main(String[] args) {
         if (args.length == 0) {
@@ -24,6 +25,7 @@ public class Main {
         boolean onlyPreciseStrings = false;
         boolean binutilsMode = false;
         boolean radareMode = false;
+        boolean truncateAddresses = false;
         Set<String> methodStrings = null;
         List<File> inputs = new ArrayList<>();
         
@@ -37,6 +39,8 @@ public class Main {
                 radareMode = true;
             else if (OPT_BINUTILS.equals(arg))
                 binutilsMode = true;
+            else if (OPT_TRUNCATE_ADDRESSES.equals(arg))
+                truncateAddresses = true;
             else if (arg.startsWith(OPT_METHOD_STRINGS)) {
                 File msFile = new File(arg.substring(OPT_METHOD_STRINGS.length()));
                 if (!msFile.exists()) {
@@ -68,7 +72,7 @@ public class Main {
 
         // A simple consumer to show the results on screen.
         NativeDatabaseConsumer dbc = new PrintDatabaseConsumer();
-        NativeScanner scanner = new NativeScanner(dbc, radareMode, onlyPreciseStrings, methodStrings);
+        NativeScanner scanner = new NativeScanner(dbc, radareMode, onlyPreciseStrings, truncateAddresses, methodStrings);
         for (File f : inputs)
             scanner.scanLib(f);
     }
@@ -80,6 +84,7 @@ public class Main {
         System.out.println("  " + OPT_ONLY_PRECISE_STRINGS + "    Filter out strings without position information.");
         System.out.println("  " + OPT_BINUTILS + "                Use binutils mode.");
         System.out.println("  " + OPT_RADARE + "                  Use Radare2 mode.");
+        System.out.println("  " + OPT_TRUNCATE_ADDRESSES + "      Truncate addresses to fit in 32 bits.");
         System.out.println("  " + OPT_METHOD_STRINGS + "<FILE>   Use method strings from <FILE> for filtering." );
     }
 }

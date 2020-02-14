@@ -9,7 +9,7 @@ import java.util.*;
 abstract class BinaryAnalysis {
 
     /** Truncate long numbers for fact generation (for Souffle without 64-bit support). */
-    private final static boolean truncateTo32Bits = true;
+    private final boolean truncateTo32Bits;
 
     /** Dummy value for "offset" column in facts. */
     private static final String UNKNOWN_OFFSET = "-1";
@@ -30,10 +30,12 @@ abstract class BinaryAnalysis {
     /** The native code architecture. */
     Arch arch;
 
-    BinaryAnalysis(NativeDatabaseConsumer dbc, String lib, boolean onlyPreciseNativeStrings) {
+    BinaryAnalysis(NativeDatabaseConsumer dbc, String lib,
+                   boolean onlyPreciseNativeStrings, boolean truncateTo32Bits) {
         this.dbc = dbc;
         this.lib = lib;
         this.onlyPreciseNativeStrings = onlyPreciseNativeStrings;
+        this.truncateTo32Bits = truncateTo32Bits;
 
         // Auto-detect architecture.
         try {
@@ -146,7 +148,7 @@ abstract class BinaryAnalysis {
         dbc.add("NATIVE_XREF", s, lib, xr.function, factAddr(xr.codeAddr));
     }
 
-    private static String factAddr(long addr) {
+    private String factAddr(long addr) {
         return String.valueOf(truncateTo32Bits ? ((addr << 32) >> 32) : addr);
     }
 
