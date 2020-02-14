@@ -3,7 +3,7 @@ package org.clyze.scanner;
 /**
  * A simple implementation of a database consumer.
  */
-class PrintDatabaseConsumer implements NativeDatabaseConsumer {
+public class PrintDatabaseConsumer implements NativeDatabaseConsumer {
     @Override
     public void add(String predicateFile, String arg, String... args) {
         StringBuilder sb = new StringBuilder(predicateFile);

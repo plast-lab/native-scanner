@@ -3,6 +3,9 @@ package org.clyze.scanner;
 import java.io.*;
 import java.util.*;
 
+/**
+ * The basic object that controls scanning of libraries.
+ */
 public class NativeScanner {
     /** Enable debug messages. */
     private final static boolean debug = false;
