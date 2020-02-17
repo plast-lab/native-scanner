@@ -71,7 +71,7 @@ class BinutilsAnalysis extends BinaryAnalysis {
                         if (s.endsWith("pei-i386") || s.startsWith("elf32-")) {
                             littleEndian = true;
                             wordSize = 4;
-                        } else if (s.endsWith("pei-x86-64") || s.endsWith("elf64-x86-64")) {
+                        } else if (s.endsWith("pei-x86-64") || s.endsWith("elf64-x86-64") || s.contains("Mach-O 64-bit x86-64")) {
                             littleEndian = true;
                             wordSize = 8;
                         } else if (s.endsWith("-little") || s.endsWith("-i386") || s.endsWith("-x86-64"))
