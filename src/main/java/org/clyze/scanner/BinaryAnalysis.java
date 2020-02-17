@@ -134,6 +134,9 @@ public abstract class BinaryAnalysis {
 
     /**
      * Reads a section by name.
+     *
+     * @param sectionName   the name of the section in the binary
+     * @return a representation of interesting data in the section
      */
     abstract public Section getSection(String sectionName) throws IOException;
 

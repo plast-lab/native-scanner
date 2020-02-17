@@ -196,12 +196,11 @@ public class RadareAnalysis extends BinaryAnalysis {
     }
 
     @Override
-    public void initEntryPoints() throws IOException {
-        File outFile = File.createTempFile("sections-out", ".txt");
-
-        runRadare("epoints", lib, outFile.getCanonicalPath());
-
-        Consumer<ArrayList<String>> proc = (l -> {
+    public void initEntryPoints() {
+        try {
+            File outFile = File.createTempFile("sections-out", ".txt");
+            runRadare("epoints", lib, outFile.getCanonicalPath());
+            Consumer<ArrayList<String>> proc = (l -> {
                 String vAddrStr = l.get(0);
                 String name = l.get(1);
                 long vAddr;
@@ -212,7 +211,11 @@ public class RadareAnalysis extends BinaryAnalysis {
                     System.err.println("WARNING: error parsing section: " + vAddrStr + " " + name);
                 }
             });
-        processMultiColumnFile(outFile, EP_MARKER, 2, proc);
+            processMultiColumnFile(outFile, EP_MARKER, 2, proc);
+        } catch (IOException ex) {
+            ex.printStackTrace();
+            throw new RuntimeException("Could not read entry points.");
+        }
     }
 
     @Override

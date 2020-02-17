@@ -80,6 +80,8 @@ public class Section {
     /**
      * Return the data as a set of machine-word pointers.
      *
+     * @param wordSize       the word size of the architecture
+     * @param littleEndian   the endianness of the architecture
      * @return a set of machine word values
      */
     public Set<Long> analyzeWords(int wordSize, boolean littleEndian) {
