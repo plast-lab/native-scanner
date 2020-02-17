@@ -14,6 +14,7 @@ class RadareAnalysis extends BinaryAnalysis {
 
     private static final boolean debug = false;
     private static final String RADARE_PY_RESOURCE = "/radare.py";
+    private static Path scriptPath = null;
 
     // Radare interface prefixes, see script for details.
     private static final String LOC_MARKER = "STRING_LOC:";
@@ -32,12 +33,15 @@ class RadareAnalysis extends BinaryAnalysis {
      *
      * @return the path of the extracted Python script
      */
-    private static Path getScript() {
+    private static synchronized Path getScript() {
+        if (scriptPath != null)
+            return scriptPath;
         try {
             Path tmpPath = Files.createTempFile("radare", ".py");
             InputStream resourceAsStream = BinaryAnalysis.class.getResourceAsStream(RADARE_PY_RESOURCE);
             Files.copy(resourceAsStream, tmpPath, StandardCopyOption.REPLACE_EXISTING);
-            return tmpPath;
+            scriptPath = tmpPath;
+            return scriptPath;
         } catch (IOException ex) {
             ex.printStackTrace();
             throw new RuntimeException("Error: could not extract " + RADARE_PY_RESOURCE);
