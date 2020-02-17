@@ -3,7 +3,7 @@ package org.clyze.scanner;
 /**
  * This interface should be implemented by all clients of the native
  * scanner library.
- * @see PrintDatabaseConsumer
+ * @see BasicDatabaseConsumer
  */
 public interface NativeDatabaseConsumer {
     /**

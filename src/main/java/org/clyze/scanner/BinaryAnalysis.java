@@ -8,6 +8,9 @@ import java.util.*;
  */
 abstract class BinaryAnalysis {
 
+    public static final String NATIVE_NAME_CANDIDATE = "NATIVE_NAME_CANDIDATE";
+    public static final String NATIVE_METHODTYPE_CANDIDATE = "NATIVE_METHODTYPE_CANDIDATE";
+
     /** Truncate long numbers for fact generation (for Souffle without 64-bit support). */
     private final boolean truncateTo32Bits;
 
@@ -103,8 +106,8 @@ abstract class BinaryAnalysis {
             System.err.println("Could not find global data pointers: " + ex.getMessage());
             dataPointers = new HashSet<>();
         }
-        writeSymbolTable("NATIVE_NAME_CANDIDATE", nameSymbols, xrefs, dataPointers);
-        writeSymbolTable("NATIVE_METHODTYPE_CANDIDATE", methodTypeSymbols, xrefs, dataPointers);
+        writeSymbolTable(NATIVE_NAME_CANDIDATE, nameSymbols, xrefs, dataPointers);
+        writeSymbolTable(NATIVE_METHODTYPE_CANDIDATE, methodTypeSymbols, xrefs, dataPointers);
 
         // Write xrefs.
         xrefs.forEach((s, refs) -> refs.forEach(xr -> writeXRef(s, xr)));

@@ -75,10 +75,12 @@ public class Main {
         }
 
         // A simple consumer to show the results on screen.
-        NativeDatabaseConsumer dbc = new PrintDatabaseConsumer();
-        NativeScanner scanner = new NativeScanner(dbc, radareMode, onlyPreciseStrings, truncateAddresses, demangle, methodStrings);
-        for (File f : inputs)
+        for (File f : inputs) {
+            BasicDatabaseConsumer dbc = new BasicDatabaseConsumer();
+            NativeScanner scanner = new NativeScanner(dbc, radareMode, onlyPreciseStrings, truncateAddresses, demangle, methodStrings);
             scanner.scanLib(f);
+            dbc.getProduct().forEach(System.out::println);
+        }
     }
     
     private static void printUsage() {
