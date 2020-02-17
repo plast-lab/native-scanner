@@ -187,7 +187,7 @@ public class NativeScanner {
      * @param xzsPath    the path to the .xzs file
      * @return the path to the decompressed library
      */
-    public String getXZSLib(String xzsPath) {
+    public static String getXZSLib(String xzsPath) {
         System.out.println("Processing xzs-packed native code: " + xzsPath);
         String xzPath = xzsPath.substring(0, xzsPath.length() - 1);
         // Change .xzs extension to .xz.
@@ -202,7 +202,7 @@ public class NativeScanner {
      * @param zstdPath   the path to the .zstd file
      * @return the path to the decompressed library
      */
-    public String getZSTDLib(String zstdPath) {
+    public static String getZSTDLib(String zstdPath) {
         System.out.println("Processing zstd-packed native code: " + zstdPath);
         String zstdOutPath = zstdPath.substring(0, zstdPath.length() - 5);
         runCommand(new ProcessBuilder("zstd", "-d", "-o", zstdOutPath));
@@ -256,6 +256,14 @@ public class NativeScanner {
                 l.add(new SymbolInfo(uString, lib, xref.function, j));
             }
         }
+    }
+
+    public static BinaryAnalysis create(NativeDatabaseConsumer dbc, boolean radareMode,
+                                        String lib, boolean onlyPreciseStrings,
+                                        boolean truncateAddresses, boolean demangle) {
+        return radareMode ?
+            new RadareAnalysis(dbc, lib, onlyPreciseStrings, truncateAddresses)  :
+            new BinutilsAnalysis(dbc, lib, onlyPreciseStrings, truncateAddresses, demangle);
     }
 }
 

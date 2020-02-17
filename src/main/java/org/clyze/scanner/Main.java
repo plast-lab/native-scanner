@@ -79,9 +79,7 @@ public class Main {
             BasicDatabaseConsumer dbc = new BasicDatabaseConsumer();
             NativeScanner scanner = new NativeScanner(methodStrings);
             String lib = f.getAbsolutePath();
-            BinaryAnalysis analysis = radareMode ?
-                    new RadareAnalysis(dbc, lib, onlyPreciseStrings, truncateAddresses)  :
-                    new BinutilsAnalysis(dbc, lib, onlyPreciseStrings, truncateAddresses, demangle);
+            BinaryAnalysis analysis = NativeScanner.create(dbc, radareMode, lib, onlyPreciseStrings, truncateAddresses, demangle);
             scanner.scanBinaryCode(analysis);
             dbc.getProduct().forEach(System.out::println);
         }
