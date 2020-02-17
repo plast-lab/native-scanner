@@ -59,11 +59,6 @@ point to the correct toolchains (to generate such toolchains, consult
 the [Android NDK documentation](https://developer.android.com/ndk/guides/standalone_toolchain)
 or equivalent binary SDK distribution).
 
-### Radare2 mode ###
-
-For Radare2 mode, set environment variable `RADARE_PY_SCRIPT` to
-point to the directory containing radare.py.
-
 ## Use ##
 
 For the standalone application, pass `--help` to see the available

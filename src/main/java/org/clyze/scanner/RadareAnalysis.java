@@ -2,15 +2,18 @@ package org.clyze.scanner;
 
 import java.io.*;
 import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.*;
 import java.util.function.Consumer;
 
-// This class implements the analysis of the native scanner that uses Radare2.
+/**
+ * This class implements the analysis of the native scanner that uses Radare2.
+ */
 class RadareAnalysis extends BinaryAnalysis {
 
     private static final boolean debug = false;
-    private static final String RADARE_PY_SCRIPT = "RADARE_PY_SCRIPT";
-    private static final String doopHome = System.getenv(RADARE_PY_SCRIPT);
+    private static final String RADARE_PY_RESOURCE = "/radare.py";
 
     // Radare interface prefixes, see script for details.
     private static final String LOC_MARKER = "STRING_LOC:";
@@ -23,14 +26,26 @@ class RadareAnalysis extends BinaryAnalysis {
                    boolean onlyPreciseNativeStrings, boolean truncateTo32Bits) {
         super(dbc, lib, onlyPreciseNativeStrings, truncateTo32Bits);
     }
-    
-    private static void runRadare(String... args) throws IOException {
-        if (doopHome == null) {
-            String msg = "Cannot find Radare script, set environment variable " + RADARE_PY_SCRIPT;
-            System.err.println(msg);
-            throw new RuntimeException(msg);
+
+    /**
+     * Extracts the bundled Radare2 Pytrhon script and returns its path.
+     *
+     * @return the path of the extracted Python script
+     */
+    private static Path getScript() {
+        try {
+            Path tmpPath = Files.createTempFile("radare", ".py");
+            InputStream resourceAsStream = BinaryAnalysis.class.getResourceAsStream(RADARE_PY_RESOURCE);
+            Files.copy(resourceAsStream, tmpPath, StandardCopyOption.REPLACE_EXISTING);
+            return tmpPath;
+        } catch (IOException ex) {
+            ex.printStackTrace();
+            throw new RuntimeException("Error: could not extract " + RADARE_PY_RESOURCE);
         }
-        String script = doopHome + File.separator + "radare.py";
+
+    }
+    private static void runRadare(String... args) throws IOException {
+        String script = getScript().toString();
 
         List<String> args0 = new LinkedList<>();
         args0.add("python");
@@ -41,8 +56,12 @@ class RadareAnalysis extends BinaryAnalysis {
         System.out.println("Radare command line: " + radareBuilder.command());
 
         List<String> output = NativeScanner.runCommand(radareBuilder);
-        if (debug)
-            output.forEach(System.out::println);
+        for (String s : output) {
+            if (s.contains("ImportError: No module named r2pipe"))
+                throw new RuntimeException("Error: r2pipe is not installed");
+            if (debug)
+                System.out.println(s);
+        }
     }
 
     /**
