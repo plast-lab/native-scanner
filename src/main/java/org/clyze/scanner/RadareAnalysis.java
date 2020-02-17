@@ -107,54 +107,58 @@ class RadareAnalysis extends BinaryAnalysis {
      * @return            a map from strings to (sets of) functions
      */
     @Override
-    Map<String, Set<XRef>> findXRefs(Map<Long, String> binStrings) throws IOException {
+    Map<String, Set<XRef>> findXRefs(Map<Long, String> binStrings) {
         System.out.println("Finding string xrefs with Radare2 in: " + lib);
 
         Map<String, Set<XRef>> xrefs = new HashMap<>();
-
-        File stringsFile = File.createTempFile("strings", ".txt");
-        try (FileWriter writer = new FileWriter(stringsFile)) {
-            binStrings.forEach((addr, s) -> {
-                    // Omit huge strings.
-                    if (s.length() > 300)
-                        return;
-                    // Omit non-Latin strings, since the Python interface
-                    // cannot support some UTF-8 codes.
-                    boolean nonLatin = false;
-                    for (char c : s.toCharArray())
-                        if (Character.UnicodeBlock.of(c) != Character.UnicodeBlock.BASIC_LATIN) {
-                            nonLatin = true;
-                            break;
-                        }
-                    if (!nonLatin)
-                        try {
-                            writer.write(addr + " " + s + "\n");
-                        } catch (IOException ex) {
-                            ex.printStackTrace();
-                        }
-                });
+        try {
+            File stringsFile = File.createTempFile("strings", ".txt");
+            try (FileWriter writer = new FileWriter(stringsFile)) {
+                binStrings.forEach((addr, s) -> writeString(addr, s, writer));
+            }
+            File outFile = File.createTempFile("string-xrefs-out", ".txt");
+            runRadare("xrefs", lib, stringsFile.getCanonicalPath(), outFile.getCanonicalPath());
+            processMultiColumnFile(outFile, LOC_MARKER, 3, l -> regXRef(l, xrefs));
+        } catch (IOException ex) {
+            ex.printStackTrace();
+            throw new RuntimeException("Could not find string xrefs: " + ex.getMessage());
         }
-
-        File outFile = File.createTempFile("string-xrefs-out", ".txt");
-
-        runRadare("xrefs", lib, stringsFile.getCanonicalPath(), outFile.getCanonicalPath());
-
-        Consumer<ArrayList<String>> proc = (l -> {
-                String func = l.get(0);
-                String codeAddrStr = l.get(1);
-                String s = l.get(2);
-                if (func.equals("(nofunc)"))
-                    func = UNKNOWN_FUNCTION;
-                long codeAddr = UNKNOWN_ADDRESS;
-                try {
-                    codeAddr = hexToLong(codeAddrStr);
-                } catch (NumberFormatException ex) {
-                    System.err.println("WARNING: error parsing xref address: " + codeAddrStr);
-                }
-                xrefs.computeIfAbsent(s, k -> new HashSet<>()).add(new XRef(lib, func, codeAddr));
-            });
-        processMultiColumnFile(outFile, LOC_MARKER, 3, proc);
         return xrefs;
+    }
+
+    private void writeString(Long addr, String s, FileWriter writer) {
+        // Omit huge strings.
+        if (s.length() > 300)
+            return;
+        // Omit non-Latin strings, since the Python interface
+        // cannot support some UTF-8 codes.
+        boolean nonLatin = false;
+        for (char c : s.toCharArray())
+            if (Character.UnicodeBlock.of(c) != Character.UnicodeBlock.BASIC_LATIN) {
+                nonLatin = true;
+                break;
+            }
+        if (!nonLatin)
+            try {
+                writer.write(addr + " " + s + "\n");
+            } catch (IOException ex) {
+                ex.printStackTrace();
+            }
+    }
+
+    private void regXRef(ArrayList<String> l, Map<String, Set<XRef>> xrefs) {
+        String func = l.get(0);
+        String codeAddrStr = l.get(1);
+        String s = l.get(2);
+        if (func.equals("(nofunc)"))
+            func = UNKNOWN_FUNCTION;
+        long codeAddr = UNKNOWN_ADDRESS;
+        try {
+            codeAddr = hexToLong(codeAddrStr);
+        } catch (NumberFormatException ex) {
+            System.err.println("WARNING: error parsing xref address: " + codeAddrStr);
+        }
+        xrefs.computeIfAbsent(s, k -> new HashSet<>()).add(new XRef(lib, func, codeAddr));
     }
 
     @Override

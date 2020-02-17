@@ -6,9 +6,11 @@ import java.util.*;
 /**
  * A binary analysis that is available to the native scanner.
  */
-abstract class BinaryAnalysis {
+public abstract class BinaryAnalysis {
 
+    /** The name of the relation containing method name strings. */
     public static final String NATIVE_NAME_CANDIDATE = "NATIVE_NAME_CANDIDATE";
+    /** The name of the relation containing method types (JVM-style method descriptors). */
     public static final String NATIVE_METHODTYPE_CANDIDATE = "NATIVE_METHODTYPE_CANDIDATE";
 
     /** Truncate long numbers for fact generation (for Souffle without 64-bit support). */
@@ -66,7 +68,7 @@ abstract class BinaryAnalysis {
      * @param binStrings   the string table (offset-string entries)
      * @return             a mapping from strings to references in code
      */
-    abstract Map<String, Set<XRef>> findXRefs(Map<Long, String> binStrings) throws IOException;
+    abstract Map<String, Set<XRef>> findXRefs(Map<Long, String> binStrings);
 
     /**
      * Initialize the entry points table of the library.
