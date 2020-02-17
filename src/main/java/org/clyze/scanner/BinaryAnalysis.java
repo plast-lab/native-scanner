@@ -108,9 +108,8 @@ public abstract class BinaryAnalysis {
      * Determine the word size of the target architecture.
      *
      * @return the word size (in bytes)
-     * @throws IOException if the word size could not be computed
      */
-    abstract protected int getWordSize() throws IOException;
+    abstract protected int getWordSize();
 
     /**
      * Returns a list of pointer values that may point to global data.

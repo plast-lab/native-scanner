@@ -242,7 +242,7 @@ class RadareAnalysis extends BinaryAnalysis {
     }
 
     @Override
-    protected int getWordSize() throws IOException {
+    protected int getWordSize() {
         Map<String, String> info = getNativeCodeInfo();
         String c = info.get("class");
         String bits = info.get("bits");
