@@ -577,14 +577,14 @@ class BinutilsAnalysis extends BinaryAnalysis {
             if (symbol.contains("W _JNIEnv::GetMethodID("))
                 referencesGetMethodID = true;
             else if (symbol.contains("W _JNIEnv::GetFieldID("))
-                referencesGetMethodID = true;
+                referencesGetFieldID = true;
         }
 
         if (referencesGetMethodID)
             System.out.println("Library references GetMethodID(): " + lib);
-        else if (referencesGetFieldID)
+        if (referencesGetFieldID)
             System.out.println("Library references GetFieldID(): " + lib);
-        else
+        if (!referencesGetMethodID && !referencesGetFieldID)
             System.out.println("Library seems to not contain interesting JNIEnv calls: " + lib);
     }
 
