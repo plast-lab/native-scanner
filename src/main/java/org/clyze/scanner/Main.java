@@ -77,8 +77,12 @@ public class Main {
         // A simple consumer to show the results on screen.
         for (File f : inputs) {
             BasicDatabaseConsumer dbc = new BasicDatabaseConsumer();
-            NativeScanner scanner = new NativeScanner(dbc, radareMode, onlyPreciseStrings, truncateAddresses, demangle, methodStrings);
-            scanner.scanLib(f);
+            NativeScanner scanner = new NativeScanner(methodStrings);
+            String lib = f.getAbsolutePath();
+            BinaryAnalysis analysis = radareMode ?
+                    new RadareAnalysis(dbc, lib, onlyPreciseStrings, truncateAddresses)  :
+                    new BinutilsAnalysis(dbc, lib, onlyPreciseStrings, truncateAddresses, demangle);
+            scanner.scanBinaryCode(analysis);
             dbc.getProduct().forEach(System.out::println);
         }
     }

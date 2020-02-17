@@ -3,9 +3,11 @@ package org.clyze.scanner;
 import java.util.*;
 import java.util.regex.*;
 
-// This class implements the analysis of the native scanner that uses
-// binutils (such as 'objdump' and 'nm').
-class BinutilsAnalysis extends BinaryAnalysis {
+/**
+ * This class implements the analysis of the native scanner that uses
+ * command-line tools (such as 'file', 'gdb', 'objdump' and 'nm').
+ */
+public class BinutilsAnalysis extends BinaryAnalysis {
 
     // Enable debug messages.
     private final static boolean debug = false;
@@ -56,7 +58,7 @@ class BinutilsAnalysis extends BinaryAnalysis {
     }
 
     @Override
-    protected synchronized Map<String, String> getNativeCodeInfo() {
+    public synchronized Map<String, String> getNativeCodeInfo() {
         if (info == null) {
             Boolean littleEndian = null;
             Integer wordSize = null;
@@ -99,12 +101,12 @@ class BinutilsAnalysis extends BinaryAnalysis {
     }
 
     @Override
-    protected int getWordSize() {
+    public int getWordSize() {
         return Integer.parseInt(getNativeCodeInfo().get("wordSize"));
     }
 
     @Override
-    protected Arch autodetectArch() {
+    public Arch autodetectArch() {
         ProcessBuilder pb = new ProcessBuilder("file", lib);
         libArch = null;
         for (String line : NativeScanner.runCommand(pb)) {

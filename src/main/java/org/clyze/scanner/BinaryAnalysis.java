@@ -13,7 +13,9 @@ public abstract class BinaryAnalysis {
     /** The name of the relation containing method types (JVM-style method descriptors). */
     public static final String NATIVE_METHODTYPE_CANDIDATE = "NATIVE_METHODTYPE_CANDIDATE";
 
-    /** Truncate long numbers for fact generation (for Souffle without 64-bit support). */
+    /** Truncate long addresses to fit 32 bits. Used for clients that
+     *  do not support 64-bit integers (such as Doop using some builds
+     *  of Souffle). */
     private final boolean truncateTo32Bits;
 
     /** Dummy value for "offset" column in facts. */
@@ -26,10 +28,12 @@ public abstract class BinaryAnalysis {
     /** The database connector to use for writing facts. */
     private final NativeDatabaseConsumer dbc;
     /** The native code library. */
-    final String lib;
+    protected final String lib;
     /** The entry points table. */
     final SortedMap<Long, String> entryPoints = new TreeMap<>();
-    /** String precision option. */
+    /** Only output localized strings (i.e. found inside function
+     *  boundaries). When function boundaries can be determined, this
+     *  improves precision. */
     private final boolean onlyPreciseNativeStrings;
 
     /** A dictionary of library properties. */
@@ -69,38 +73,47 @@ public abstract class BinaryAnalysis {
     }
 
     /**
+     * Returns the path of the analyzed binary.
+     *
+     * @return the native library path
+     */
+    public String getLib() {
+        return this.lib;
+    }
+
+    /**
      * Find string cross-references.
      *
      * @param binStrings   the string table (offset-string entries)
      * @return             a mapping from strings to references in code
      */
-    abstract Map<String, Set<XRef>> findXRefs(Map<Long, String> binStrings);
+    abstract public Map<String, Set<XRef>> findXRefs(Map<Long, String> binStrings);
 
     /**
      * Initialize the entry points table of the library.
      */
-    abstract void initEntryPoints() throws IOException;
+    abstract public void initEntryPoints() throws IOException;
 
     /**
      * Autodetect the target hardware architecture.
      *
      * @return the architecture
      */
-    abstract protected Arch autodetectArch();
+    abstract public Arch autodetectArch();
 
     /**
      * A getter of the "info" field.
      *
      * @return the "info" mapping
      */
-    abstract protected Map<String, String> getNativeCodeInfo();
+    abstract public Map<String, String> getNativeCodeInfo();
 
     /**
      * Autodetect the endianness of the target architecture.
      *
      * @return if true, architecture is little-endian, big-endian otherwise
      */
-    protected boolean isLittleEndian() {
+    public boolean isLittleEndian() {
         return getNativeCodeInfo().get("endian").equals("little");
     }
 
@@ -109,7 +122,7 @@ public abstract class BinaryAnalysis {
      *
      * @return the word size (in bytes)
      */
-    abstract protected int getWordSize();
+    abstract public int getWordSize();
 
     /**
      * Returns a list of pointer values that may point to global data.
@@ -122,7 +135,7 @@ public abstract class BinaryAnalysis {
     /**
      * Reads a section by name.
      */
-    abstract Section getSection(String sectionName) throws IOException;
+    abstract public Section getSection(String sectionName) throws IOException;
 
     /**
      * Write the facts computed by the analysis.

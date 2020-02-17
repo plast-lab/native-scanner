@@ -9,47 +9,19 @@ import java.util.*;
 public class NativeScanner {
     /** Enable debug messages. */
     private final static boolean debug = false;
-    private final NativeDatabaseConsumer dbc;
-    /** Use Radare to find strings. */
-    private final boolean useRadare;
-    /** Only output localized strings (i.e. found inside function
-     *  boundaries). When function boundaries can be determined, this
-     *  improves precision. */
-    private final boolean onlyPreciseNativeStrings;
+    /** The method strings to use for improving precision. */
     private final Set<String> methodStrings;
-    /** Truncate long addresses to fit 32 bits. Used for clients that
-     *  do not support 64-bit integers (such as Doop using some builds
-     *  of Souffle). */
-    private final boolean truncateAddresses;
-    /** Support name demangling for some analysis back ends. */
-    private final boolean demangle;
 
     /**
      * Create a native scanner object, to be used for analyzing native
      * libraries.
      *
-     * @param dbc                   the database consumer to receive the results
-     * @param useRadare             if true, use Radare2
-     * @param preciseNativeStrings  only keep native strings with enough information
-     * @param truncateAddresses     truncate long addresses to 32 bits
-     * @param demangle              demangle names for library entry points (may
-     *                              not be supported for all analysis modes)
      * @param methodStrings         a list of method substrings (names and
      *                              type descriptors) to use for filtering -- set to
      *                              null to disable this filtering
      */
-    public NativeScanner(NativeDatabaseConsumer dbc, boolean useRadare,
-                         boolean preciseNativeStrings, boolean truncateAddresses,
-                         boolean demangle, Set<String> methodStrings) {
-        this.dbc = dbc;
-        this.useRadare = useRadare;
-        this.onlyPreciseNativeStrings = preciseNativeStrings;
-        this.truncateAddresses = truncateAddresses;
+    public NativeScanner(Set<String> methodStrings) {
         this.methodStrings = methodStrings;
-        this.demangle = demangle;
-
-        if (useRadare && demangle)
-            System.err.println("WARNING: name demangling cannot be configured in Radare2 mode.");
 
         if (methodStrings != null)
             System.err.println("Initializing native scanner with " + methodStrings.size() + " strings related to methods.");
@@ -58,27 +30,14 @@ public class NativeScanner {
     }
 
     /**
-     * Returns the analysis mode used by the scanner.
+     * Scan a piece of native code.
      *
-     * @return true if Radare2 is used, false if the binutils-based approach is used.
+     * @param analysis   the binary analysis to use
      */
-    public boolean getMode() {
-        return this.useRadare;
-    }
-
-    /**
-     * Scan a native code library.
-     *
-     * @param libFile        the native code library
-     */
-    public void scanLib(File libFile) {
+    public void scanBinaryCode(BinaryAnalysis analysis) {
         try {
-            String lib = libFile.getCanonicalPath();
+            String lib = analysis.getLib();
             System.out.println("== Processing library: " + lib + " ==");
-
-            BinaryAnalysis analysis = useRadare ?
-                new RadareAnalysis(dbc, lib, onlyPreciseNativeStrings, truncateAddresses)  :
-                new BinutilsAnalysis(dbc, lib, onlyPreciseNativeStrings, truncateAddresses, demangle);
 
             analysis.initEntryPoints();
 
@@ -228,32 +187,31 @@ public class NativeScanner {
     }
 
     /**
-     * Handle .xzs libraries (found in some .apk inputs).
+     * Unpack .xzs libraries (found in some .apk inputs).
      *
-     * @param xzsFile   the .xzs file
+     * @param xzsPath    the path to the .xzs file
+     * @return the path to the decompressed library
      */
-    public void scanXZSLib(File xzsFile) {
-        String xzsPath = xzsFile.getAbsolutePath();
+    public String getXZSLib(String xzsPath) {
         System.out.println("Processing xzs-packed native code: " + xzsPath);
         String xzPath = xzsPath.substring(0, xzsPath.length() - 1);
         // Change .xzs extension to .xz.
         runCommand(new ProcessBuilder("mv", xzsPath, xzPath));
         runCommand(new ProcessBuilder("xz", "--decompress", xzPath));
-        File libTmpFile = new File(xzPath.substring(0, xzPath.length() - 3));
-        scanLib(libTmpFile);
+        return xzPath.substring(0, xzPath.length() - 3);
     }
 
     /**
      * Handle .zstd libraries (found in some .apk inputs).
-     * @param zstdFile   the .zstd file
+     *
+     * @param zstdPath   the path to the .zstd file
+     * @return the path to the decompressed library
      */
-    public void scanZSTDLib(File zstdFile) {
-        String zstdPath = zstdFile.getAbsolutePath();
+    public String getZSTDLib(String zstdPath) {
         System.out.println("Processing zstd-packed native code: " + zstdPath);
         String zstdOutPath = zstdPath.substring(0, zstdPath.length() - 5);
         runCommand(new ProcessBuilder("zstd", "-d", "-o", zstdOutPath));
-        File libTmpFile = new File(zstdOutPath);
-        scanLib(libTmpFile);
+        return zstdOutPath;
     }
 
     /**

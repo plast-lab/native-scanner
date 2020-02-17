@@ -4,8 +4,10 @@ import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.util.*;
 
-// A representation of a section in a binary.
-class Section {
+/**
+ * A representation of a section in a binary.
+ */
+public class Section {
     private final String name;
     private final String lib;
     private final int size;

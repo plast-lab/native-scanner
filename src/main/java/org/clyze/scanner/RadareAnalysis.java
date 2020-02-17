@@ -10,7 +10,7 @@ import java.util.function.Consumer;
 /**
  * This class implements the analysis of the native scanner that uses Radare2.
  */
-class RadareAnalysis extends BinaryAnalysis {
+public class RadareAnalysis extends BinaryAnalysis {
 
     private static final boolean debug = false;
     private static final String RADARE_PY_RESOURCE = "/radare.py";
@@ -109,7 +109,7 @@ class RadareAnalysis extends BinaryAnalysis {
      * @return            a map from strings to (sets of) functions
      */
     @Override
-    Map<String, Set<XRef>> findXRefs(Map<Long, String> binStrings) {
+    public Map<String, Set<XRef>> findXRefs(Map<Long, String> binStrings) {
         System.out.println("Finding string xrefs with Radare2 in: " + lib);
 
         Map<String, Set<XRef>> xrefs = new HashMap<>();
@@ -216,7 +216,7 @@ class RadareAnalysis extends BinaryAnalysis {
     }
 
     @Override
-    protected synchronized Map<String, String> getNativeCodeInfo() {
+    public synchronized Map<String, String> getNativeCodeInfo() {
         if (info == null) {
             try {
                 File outFile = File.createTempFile("info-out", ".txt");
@@ -237,12 +237,12 @@ class RadareAnalysis extends BinaryAnalysis {
     }
 
     @Override
-    protected boolean isLittleEndian() {
+    public boolean isLittleEndian() {
         return getNativeCodeInfo().get("endian").equals("little");
     }
 
     @Override
-    protected int getWordSize() {
+    public int getWordSize() {
         Map<String, String> info = getNativeCodeInfo();
         String c = info.get("class");
         String bits = info.get("bits");
@@ -260,7 +260,7 @@ class RadareAnalysis extends BinaryAnalysis {
     }
 
     @Override
-    protected Arch autodetectArch() {
+    public Arch autodetectArch() {
         Map<String, String> info = getNativeCodeInfo();
 
         String arch = info.get("arch");
