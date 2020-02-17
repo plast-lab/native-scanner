@@ -35,101 +35,96 @@ public class NativeScanner {
      * @param analysis   the binary analysis to use
      */
     public void scanBinaryCode(BinaryAnalysis analysis) {
-        try {
-            String lib = analysis.getLib();
-            System.out.println("== Processing library: " + lib + " ==");
+        String lib = analysis.getLib();
+        System.out.println("== Processing library: " + lib + " ==");
 
-            analysis.initEntryPoints();
+        analysis.initEntryPoints();
 
-            // Find all strings in the binary.
-            System.out.println("Gathering strings from " + lib + "...");
-            SortedMap<Long, String> allStrings = analysis.findStrings();
-            if (allStrings == null || allStrings.size() == 0) {
-                System.err.println("Cannot find strings in " + lib + ", aborting.");
-                return;
-            }
-            System.out.println("Total strings: " + allStrings.size());
-            if (debug)
-                allStrings.forEach ((k, v) -> System.out.println(k + " -> " + v));
-
-            // Filter the strings to work with a more manageable set
-            // of strings.
-            Map<String, List<SymbolInfo>> nameSymbols = new HashMap<>();
-            Map<String, List<SymbolInfo>> methodTypeSymbols = new HashMap<>();
-            SortedMap<Long, String> strings = new TreeMap<>();
-            for (Map.Entry<Long, String> foundString : allStrings.entrySet()) {
-                String s = foundString.getValue();
-                // Keep only those that were encountered in the input
-                // program as method names or signatures.
-                if (methodStrings != null && !methodStrings.contains(s)) {
-                    // System.err.println("Rejecting string: " + s);
-                    continue;
-                }
-                Long addr = foundString.getKey();
-                if (isMethodType(s)) {
-                    addSymbol(methodTypeSymbols, s, new SymbolInfo(s, lib, BinaryAnalysis.UNKNOWN_FUNCTION, addr));
-                    strings.put(addr, s);
-                } else if (isName(s)) {
-                    addSymbol(nameSymbols, s, new SymbolInfo(s, lib, BinaryAnalysis.UNKNOWN_FUNCTION, addr));
-                    strings.put(addr, s);
-                } else if (debug)
-                    // If this code runs, then a method-related string is not a name/type.
-                    System.err.println("WARNING: rejecting native string '" + s + "'");
-            }
-            System.out.println("Filter: " + strings.size() + " out of " + allStrings.size() + " survived.");
-            if (debug)
-                strings.forEach((k, v) -> System.out.println(k + " -> " + v));
-
-            // If name or method type sets are empty, do not continue,
-            // as their product will eventually be empty as well.
-            int namesCount = nameSymbols.keySet().size();
-            int methodTypesCount = methodTypeSymbols.keySet().size();
-            if (namesCount == 0 || methodTypesCount == 0) {
-                System.out.println("Product [name x type] is empty, ignoring native library.");
-                return;
-            } else {
-                System.out.println("Possible method/class names: " + namesCount);
-                System.out.println("Possible method types found: " + methodTypesCount);
-            }
-
-            // Find in which function every string is used.
-            long xrefsTime1 = System.currentTimeMillis();
-            Map<String, Set<XRef>> xrefs = analysis.findXRefs(strings);
-            long xrefsTime2 = System.currentTimeMillis();
-            System.out.println("Computed " + xrefs.size() + " xrefs (time: " + ((xrefsTime2 - xrefsTime1) / 1000.0) + " sec)");
-            if (debug)
-                xrefs.forEach ((k, v) -> System.out.println("XREF: '" + k + "' -> " + v) );
-
-            // Write out facts: first write names and method types that
-            // belong to known functions, then write everything else (that
-            // may be found via radare or parsing the .rodata section).
-            // For values that we know their containing function, we set special offsets.
-            for (String s : xrefs.keySet()) {
-                if (s == null)
-                    continue;
-                if (isMethodType(s)) {
-                    Set<XRef> strRefs = xrefs.get(s);
-                    if (strRefs != null)
-                        for (XRef strRef : strRefs)
-                            addSymbol(methodTypeSymbols, s, new SymbolInfo(s, lib, strRef.function, null));
-                } else if (isName(s)) {
-                    Set<XRef> strRefs = xrefs.get(s);
-                    if (strRefs != null)
-                        for (XRef strRef : strRefs)
-                            addSymbol(nameSymbols, s, new SymbolInfo(s, lib, strRef.function, null));
-                }
-            }
-
-            // Resolve "unknown function" info.
-            updateLibSymbolTable(nameSymbols, lib, xrefs);
-            updateLibSymbolTable(methodTypeSymbols, lib, xrefs);
-
-            // Finally write facts.
-            analysis.writeFacts(xrefs, nameSymbols, methodTypeSymbols);
-
-        } catch (IOException ex) {
-            ex.printStackTrace();
+        // Find all strings in the binary.
+        System.out.println("Gathering strings from " + lib + "...");
+        SortedMap<Long, String> allStrings = analysis.findStrings();
+        if (allStrings == null || allStrings.size() == 0) {
+            System.err.println("Cannot find strings in " + lib + ", aborting.");
+            return;
         }
+        System.out.println("Total strings: " + allStrings.size());
+        if (debug)
+            allStrings.forEach ((k, v) -> System.out.println(k + " -> " + v));
+
+        // Filter the strings to work with a more manageable set
+        // of strings.
+        Map<String, List<SymbolInfo>> nameSymbols = new HashMap<>();
+        Map<String, List<SymbolInfo>> methodTypeSymbols = new HashMap<>();
+        SortedMap<Long, String> strings = new TreeMap<>();
+        for (Map.Entry<Long, String> foundString : allStrings.entrySet()) {
+            String s = foundString.getValue();
+            // Keep only those that were encountered in the input
+            // program as method names or signatures.
+            if (methodStrings != null && !methodStrings.contains(s)) {
+                // System.err.println("Rejecting string: " + s);
+                continue;
+            }
+            Long addr = foundString.getKey();
+            if (isMethodType(s)) {
+                addSymbol(methodTypeSymbols, s, new SymbolInfo(s, lib, BinaryAnalysis.UNKNOWN_FUNCTION, addr));
+                strings.put(addr, s);
+            } else if (isName(s)) {
+                addSymbol(nameSymbols, s, new SymbolInfo(s, lib, BinaryAnalysis.UNKNOWN_FUNCTION, addr));
+                strings.put(addr, s);
+            } else if (debug)
+                // If this code runs, then a method-related string is not a name/type.
+                System.err.println("WARNING: rejecting native string '" + s + "'");
+        }
+        System.out.println("Filter: " + strings.size() + " out of " + allStrings.size() + " survived.");
+        if (debug)
+            strings.forEach((k, v) -> System.out.println(k + " -> " + v));
+
+        // If name or method type sets are empty, do not continue,
+        // as their product will eventually be empty as well.
+        int namesCount = nameSymbols.keySet().size();
+        int methodTypesCount = methodTypeSymbols.keySet().size();
+        if (namesCount == 0 || methodTypesCount == 0) {
+            System.out.println("Product [name x type] is empty, ignoring native library.");
+            return;
+        } else {
+            System.out.println("Possible method/class names: " + namesCount);
+            System.out.println("Possible method types found: " + methodTypesCount);
+        }
+
+        // Find in which function every string is used.
+        long xrefsTime1 = System.currentTimeMillis();
+        Map<String, Set<XRef>> xrefs = analysis.findXRefs(strings);
+        long xrefsTime2 = System.currentTimeMillis();
+        System.out.println("Computed " + xrefs.size() + " xrefs (time: " + ((xrefsTime2 - xrefsTime1) / 1000.0) + " sec)");
+        if (debug)
+            xrefs.forEach ((k, v) -> System.out.println("XREF: '" + k + "' -> " + v) );
+
+        // Write out facts: first write names and method types that
+        // belong to known functions, then write everything else (that
+        // may be found via radare or parsing the .rodata section).
+        // For values that we know their containing function, we set special offsets.
+        for (String s : xrefs.keySet()) {
+            if (s == null)
+                continue;
+            if (isMethodType(s)) {
+                Set<XRef> strRefs = xrefs.get(s);
+                if (strRefs != null)
+                    for (XRef strRef : strRefs)
+                        addSymbol(methodTypeSymbols, s, new SymbolInfo(s, lib, strRef.function, null));
+            } else if (isName(s)) {
+                Set<XRef> strRefs = xrefs.get(s);
+                if (strRefs != null)
+                    for (XRef strRef : strRefs)
+                        addSymbol(nameSymbols, s, new SymbolInfo(s, lib, strRef.function, null));
+            }
+        }
+
+        // Resolve "unknown function" info.
+        updateLibSymbolTable(nameSymbols, lib, xrefs);
+        updateLibSymbolTable(methodTypeSymbols, lib, xrefs);
+
+        // Finally write facts.
+        analysis.writeFacts(xrefs, nameSymbols, methodTypeSymbols);
     }
 
     private static boolean isName(String line) {

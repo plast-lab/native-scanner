@@ -92,7 +92,7 @@ public abstract class BinaryAnalysis {
     /**
      * Initialize the entry points table of the library.
      */
-    abstract public void initEntryPoints() throws IOException;
+    abstract public void initEntryPoints();
 
     /**
      * Autodetect the target hardware architecture.
@@ -137,6 +137,7 @@ public abstract class BinaryAnalysis {
      *
      * @param sectionName   the name of the section in the binary
      * @return a representation of interesting data in the section
+     * @throws IOException  if the section could not be read
      */
     abstract public Section getSection(String sectionName) throws IOException;
 
