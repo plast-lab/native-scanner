@@ -207,19 +207,24 @@ public class NativeScanner {
         return true;
     }
 
-    static List<String> runCommand(ProcessBuilder builder) throws IOException {
+    static List<String> runCommand(ProcessBuilder builder) {
         if (debug)
             System.err.println("Running external command: " + String.join(" ", builder.command()));
         builder.redirectErrorStream(true);
-        Process process = builder.start();
-        InputStream is = process.getInputStream();
-        BufferedReader reader = new BufferedReader(new InputStreamReader(is));
+        try {
+            Process process = builder.start();
+            InputStream is = process.getInputStream();
+            BufferedReader reader = new BufferedReader(new InputStreamReader(is));
 
-        List<String> lines = new LinkedList<>();
-        String line;
-        while ((line = reader.readLine()) != null)
-            lines.add(line);
-        return lines;
+            List<String> lines = new LinkedList<>();
+            String line;
+            while ((line = reader.readLine()) != null)
+                lines.add(line);
+            return lines;
+        } catch (IOException ex) {
+            ex.printStackTrace();
+            throw new RuntimeException("Could not run command: " + String.join(" ", builder.command()));
+        }
     }
 
     /**
@@ -231,15 +236,11 @@ public class NativeScanner {
         String xzsPath = xzsFile.getAbsolutePath();
         System.out.println("Processing xzs-packed native code: " + xzsPath);
         String xzPath = xzsPath.substring(0, xzsPath.length() - 1);
-        try {
-            // Change .xzs extension to .xz.
-            runCommand(new ProcessBuilder("mv", xzsPath, xzPath));
-            runCommand(new ProcessBuilder("xz", "--decompress", xzPath));
-            File libTmpFile = new File(xzPath.substring(0, xzPath.length() - 3));
-            scanLib(libTmpFile);
-        } catch (IOException ex) {
-            ex.printStackTrace();
-        }
+        // Change .xzs extension to .xz.
+        runCommand(new ProcessBuilder("mv", xzsPath, xzPath));
+        runCommand(new ProcessBuilder("xz", "--decompress", xzPath));
+        File libTmpFile = new File(xzPath.substring(0, xzPath.length() - 3));
+        scanLib(libTmpFile);
     }
 
     /**
@@ -250,13 +251,9 @@ public class NativeScanner {
         String zstdPath = zstdFile.getAbsolutePath();
         System.out.println("Processing zstd-packed native code: " + zstdPath);
         String zstdOutPath = zstdPath.substring(0, zstdPath.length() - 5);
-        try {
-            runCommand(new ProcessBuilder("zstd", "-d", "-o", zstdOutPath));
-            File libTmpFile = new File(zstdOutPath);
-            scanLib(libTmpFile);
-        } catch (IOException ex) {
-            ex.printStackTrace();
-        }
+        runCommand(new ProcessBuilder("zstd", "-d", "-o", zstdOutPath));
+        File libTmpFile = new File(zstdOutPath);
+        scanLib(libTmpFile);
     }
 
     /**

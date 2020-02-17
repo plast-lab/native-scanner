@@ -6,8 +6,8 @@ import java.util.*;
  * A simple implementation of a database consumer.
  */
 public class BasicDatabaseConsumer implements NativeDatabaseConsumer {
-    private Map<String, Set<String>> product = new HashMap<>();
-    private Set<String> signatures = new HashSet<>();
+    private final Map<String, Set<String>> product = new HashMap<>();
+    private final Set<String> signatures = new HashSet<>();
 
     @Override
     public void add(String predicateFile, String arg, String... args) {
@@ -19,8 +19,7 @@ public class BasicDatabaseConsumer implements NativeDatabaseConsumer {
 
         if (predicateFile.equals(BinaryAnalysis.NATIVE_NAME_CANDIDATE)) {
             String name = args[1];
-            if (product.get(name) == null)
-                product.put(name, signatures);
+            product.computeIfAbsent(name, k -> signatures);
         } else if (predicateFile.equals(BinaryAnalysis.NATIVE_METHODTYPE_CANDIDATE))
             signatures.add(args[1]);
     }

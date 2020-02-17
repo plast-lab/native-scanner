@@ -48,7 +48,7 @@ class RadareAnalysis extends BinaryAnalysis {
         }
 
     }
-    private static void runRadare(String... args) throws IOException {
+    private static void runRadare(String... args) {
         String script = getScript().toString();
 
         List<String> args0 = new LinkedList<>();
@@ -184,7 +184,7 @@ class RadareAnalysis extends BinaryAnalysis {
                     vAddr = hexToLong(vAddrStr);
                     size = Integer.parseInt(sizeStr.trim());
                     offset = hexToLong(offsetStr);
-                    sec[0] = new Section(secName, arch, lib, size, vAddr, offset);
+                    sec[0] = new Section(secName, lib, size, vAddr, offset);
                 } catch (NumberFormatException ex) {
                     System.err.println("WARNING: error parsing section: " + secName + " " + vAddrStr + " " + sizeStr);
                 }
@@ -214,41 +214,69 @@ class RadareAnalysis extends BinaryAnalysis {
     }
 
     @Override
-    protected Arch autodetectArch() throws IOException {
-        File outFile = File.createTempFile("info-out", ".txt");
-
-        runRadare("info", lib, outFile.getCanonicalPath());
-
-        Map<String, String> info = new HashMap<>();
-        Consumer<ArrayList<String>> proc = (l -> {
+    protected synchronized Map<String, String> getNativeCodeInfo() throws IOException {
+        if (info == null) {
+            File outFile = File.createTempFile("info-out", ".txt");
+            runRadare("info", lib, outFile.getCanonicalPath());
+            this.info = new HashMap<>();
+            Consumer<ArrayList<String>> proc = (l -> {
                 String key = l.get(0);
                 String value = l.get(1);
-                info.put(key.trim(), value.trim());
+                this.info.put(key.trim(), value.trim());
             });
-        processMultiColumnFile(outFile, INFO_MARKER, 2, proc);
+            processMultiColumnFile(outFile, INFO_MARKER, 2, proc);
+        }
+        return this.info;
+    }
+
+    @Override
+    protected boolean isLittleEndian() throws IOException {
+        return getNativeCodeInfo().get("endian").equals("little");
+    }
+
+    @Override
+    protected int getWordSize() throws IOException {
+        Map<String, String> info = getNativeCodeInfo();
+        String c = info.get("class");
+        String bits = info.get("bits");
+        if (c.equals("ELF32"))
+            return 4;
+        else if (c.equals("PE32") && bits.equals("32"))
+            return 4;
+        else if (c.equals("PE32+") && bits.equals("64"))
+            return 8;
+        else {
+            int ws = Integer.parseInt(bits) / 8;
+            System.out.println("Unknown class " + c + ", assuming word size = " + ws);
+            return ws;
+        }
+    }
+
+    @Override
+    protected Arch autodetectArch() throws IOException {
+        Map<String, String> info = getNativeCodeInfo();
 
         String arch = info.get("arch");
         String bits = info.get("bits");
 
-        Arch ret = null;
         if (arch.equals("x86") && bits.equals("32"))
-            ret = Arch.X86;
+            this.libArch = Arch.X86;
         else if (arch.equals("x86") && bits.equals("64"))
-            ret = Arch.X86_64;
+            this.libArch = Arch.X86_64;
         else if (arch.equals("arm") && bits.equals("64"))
-            ret = Arch.AARCH64;
+            this.libArch = Arch.AARCH64;
         else if (arch.equals("arm") && (bits.equals("16") || bits.equals("32")))
-            ret = Arch.ARMEABI;
+            this.libArch = Arch.ARMEABI;
         else if (arch.equals("mips"))
-            ret = Arch.MIPS;
+            this.libArch = Arch.MIPS;
 
-        if (bits == null || ret == null) {
-            ret = Arch.DEFAULT_ARCH;
-            System.out.println("Could not determine architecture of " + lib + ", using default: " + ret);
+        if (bits == null || this.libArch == null) {
+            this.libArch = Arch.DEFAULT_ARCH;
+            System.out.println("Could not determine architecture of " + lib + ", using default: " + this.libArch);
         } else
-            System.out.println("Detected architecture of " + lib + " is " + arch);
+            System.out.println("Detected architecture of " + lib + " is " + this.libArch);
 
-        return ret;
+        return this.libArch;
     }
 
     private void processMultiColumnFile(File f, String prefix, int numColumns,

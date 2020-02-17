@@ -1,6 +1,5 @@
 package org.clyze.scanner;
 
-import java.io.*;
 import java.util.*;
 import java.util.regex.*;
 
@@ -34,13 +33,13 @@ class BinutilsAnalysis extends BinaryAnalysis {
 
         this.nmCmd = "nm";
         this.objdumpCmd = "objdump";
-        if (arch == Arch.ARMEABI) {
+        if (libArch == Arch.ARMEABI) {
             if (toolchainARMEABI != null) {
                 this.nmCmd = toolchainARMEABI + "/bin/nm";
                 this.objdumpCmd = toolchainARMEABI + "/bin/objdump";
             } else
                 System.err.println("No ARMEABI toolchain found, set " + envVarARMEABI + ". Using system nm/objdump.");
-        } else if (arch == Arch.AARCH64) {
+        } else if (libArch == Arch.AARCH64) {
             if (toolchainAARCH64 != null) {
                 this.nmCmd = toolchainAARCH64 + "/bin/nm";
                 this.objdumpCmd = toolchainAARCH64 + "/bin/objdump";
@@ -50,59 +49,107 @@ class BinutilsAnalysis extends BinaryAnalysis {
 
         if (debug) {
             System.out.println("== Native scanner paths ==");
-            System.out.println("arch = " + arch);
+            System.out.println("arch = " + libArch);
             System.out.println("nmCmd = " + nmCmd);
             System.out.println("objdumpCmd = " + objdumpCmd);
         }
     }
 
     @Override
-    protected Arch autodetectArch() throws IOException {
+    protected synchronized Map<String, String> getNativeCodeInfo() {
+        if (info == null) {
+            Boolean littleEndian = null;
+            Integer wordSize = null;
+
+            ProcessBuilder gdbBuilder = new ProcessBuilder("objdump", "-d", lib);
+            final String FILE_FORMAT = "file format";
+
+            for (String line : NativeScanner.runCommand(gdbBuilder)) {
+                int idx = line.indexOf(FILE_FORMAT);
+                if (idx != -1)
+                    for (String s : line.substring(idx + FILE_FORMAT.length()).split("\\s+"))
+                        if (s.endsWith("pei-i386") || s.startsWith("elf32-")) {
+                            littleEndian = true;
+                            wordSize = 4;
+                        } else if (s.endsWith("pei-x86-64") || s.endsWith("elf64-x86-64")) {
+                            littleEndian = true;
+                            wordSize = 8;
+                        } else if (s.endsWith("-little") || s.endsWith("-i386") || s.endsWith("-x86-64"))
+                            littleEndian = true;
+                        else if (s.endsWith("-big"))
+                            littleEndian = false;
+            }
+
+            if (littleEndian == null) {
+                final boolean DEFAULT_ENDIANNESS = true;
+                System.err.println("WARNING: could not determine endianness, assuming littleEndian=" + DEFAULT_ENDIANNESS);
+                littleEndian = DEFAULT_ENDIANNESS;
+            }
+            if (wordSize == null) {
+                final int DEFAULT_WORDSIZE = 4;
+                System.err.println("WARNING: could not determine word size, assuming wordSize=" + DEFAULT_WORDSIZE);
+                wordSize = DEFAULT_WORDSIZE;
+            }
+
+            this.info = new HashMap<>();
+            info.put("endian", littleEndian ? "little" : "big");
+            info.put("wordSize", wordSize + "");
+        }
+        return info;
+    }
+
+    @Override
+    protected int getWordSize() {
+        return Integer.parseInt(getNativeCodeInfo().get("wordSize"));
+    }
+
+    @Override
+    protected Arch autodetectArch() {
         ProcessBuilder pb = new ProcessBuilder("file", lib);
-        Arch arch = null;
+        libArch = null;
         for (String line : NativeScanner.runCommand(pb)) {
             if (line.contains("80386")) {
-                arch = Arch.X86;
+                libArch = Arch.X86;
                 break;
             } else if (line.contains("x86-64")) {
-                arch = Arch.X86_64;
+                libArch = Arch.X86_64;
                 break;
             } else if (line.contains("aarch64")) {
-                arch = Arch.AARCH64;
+                libArch = Arch.AARCH64;
                 break;
             } else if (line.contains("ARM") || line.contains("EABI")) {
-                arch = Arch.ARMEABI;
+                libArch = Arch.ARMEABI;
                 break;
             } else if (line.contains("MIPS")) {
-                arch = Arch.MIPS;
+                libArch = Arch.MIPS;
                 break;
             }
         }
-        if (arch != null)
-            System.out.println("Detected architecture of " + lib + " is " + arch);
+        if (libArch != null)
+            System.out.println("Detected architecture of " + lib + " is " + libArch);
         else {
-            arch = Arch.DEFAULT_ARCH;
-            System.out.println("Could not determine architecture of " + lib + ", using default: " + arch);
+            libArch = Arch.DEFAULT_ARCH;
+            System.out.println("Could not determine architecture of " + lib + ", using default: " + libArch);
         }
-        return arch;
+        return libArch;
     }
 
     @Override
     public Map<String, Set<XRef>> findXRefs(Map<Long, String> binStrings) {
         System.out.println("Using built-in scanner to find strings in functions...");
-        if (arch.equals(Arch.X86))
+        if (libArch.equals(Arch.X86))
             return findXRefsInX86(binStrings, lib);
-        else if (arch.equals(Arch.X86_64))
+        else if (libArch.equals(Arch.X86_64))
             return findXRefsInX86_64(binStrings, lib);
-        else if (arch.equals(Arch.AARCH64))
+        else if (libArch.equals(Arch.AARCH64))
             return findXRefsInAARCH64(binStrings, lib);
-        else if (arch.equals(Arch.ARMEABI)) {
+        else if (libArch.equals(Arch.ARMEABI)) {
             // Fuse results for both armeabi/armeabi-v7a.
             Map<String, Set<XRef>> eabi = findXRefsInARMEABI(binStrings, lib);
             Map<String, Set<XRef>> eabi7 = findXRefsInARMEABIv7a(binStrings, lib);
             return mergeMaps(eabi, eabi7);
         }
-        System.err.println("Architecture not supported: " + arch);
+        System.err.println("Architecture not supported: " + libArch);
         return new HashMap<>();
     }
 
@@ -140,48 +187,44 @@ class BinutilsAnalysis extends BinaryAnalysis {
         Pattern leaPattern = Pattern.compile("^.*lea\\s+(.)[0][x]([a-f0-9]+)[(][%](.*)[)].*$");
         Matcher m;
 
-        try {
-            ProcessBuilder gdbBuilder = new ProcessBuilder("objdump", "-j", ".text", "-d", lib);
-            for (String line : NativeScanner.runCommand(gdbBuilder)) {
-                m = funPattern.matcher(line);
-                if (m.find()) {
-                    function = m.group(1);
-                    registers = new HashMap<>();
-                    continue;
-                }
+        ProcessBuilder gdbBuilder = new ProcessBuilder("objdump", "-j", ".text", "-d", lib);
+        for (String line : NativeScanner.runCommand(gdbBuilder)) {
+            m = funPattern.matcher(line);
+            if (m.find()) {
+                function = m.group(1);
+                registers = new HashMap<>();
+                continue;
+            }
 
-                m = addPattern.matcher(line);
-                if (m.find()) {
-                    Long value = hexToLong(m.group(1)) + hexToLong(m.group(2));
-                    if (registers == null)
-                        System.err.println("WARNING: no registers map initialized for 'add' pattern");
-                    else
-                        registers.put(m.group(3), value);
-                    continue;
-                }
+            m = addPattern.matcher(line);
+            if (m.find()) {
+                Long value = hexToLong(m.group(1)) + hexToLong(m.group(2));
+                if (registers == null)
+                    System.err.println("WARNING: no registers map initialized for 'add' pattern");
+                else
+                    registers.put(m.group(3), value);
+                continue;
+            }
 
-                m = leaPattern.matcher(line);
-                if (m.find()) {
-                    if (registers == null)
-                        System.err.println("WARNING: no registers map initialized for 'lea' pattern");
-                    else if (registers.get(m.group(3)) != null) {
-                        address = registers.get(m.group(3));
-                        if (m.group(1).equals(" "))
-                            address += hexToLong(m.group(2));
-                        else if (m.group(1).equals("-"))
-                            address -= hexToLong(m.group(2));
+            m = leaPattern.matcher(line);
+            if (m.find()) {
+                if (registers == null)
+                    System.err.println("WARNING: no registers map initialized for 'lea' pattern");
+                else if (registers.get(m.group(3)) != null) {
+                    address = registers.get(m.group(3));
+                    if (m.group(1).equals(" "))
+                        address += hexToLong(m.group(2));
+                    else if (m.group(1).equals("-"))
+                        address -= hexToLong(m.group(2));
 
-                        String str = foundStrings.get(address);
-                        if (str != null) {
-                            if (debug)
-                                System.out.println("objdump disassemble string: '" + str + "' -> " + address);
-                            registerXRef(xrefs, str, function);
-                        }
+                    String str = foundStrings.get(address);
+                    if (str != null) {
+                        if (debug)
+                            System.out.println("objdump disassemble string: '" + str + "' -> " + address);
+                        registerXRef(xrefs, str, function);
                     }
                 }
             }
-        } catch (IOException ex) {
-            System.err.println("Could not run objdump: " + ex.getMessage());
         }
 
         return xrefs;
@@ -206,7 +249,7 @@ class BinutilsAnalysis extends BinaryAnalysis {
                         }
                     }
                 }
-            } catch (IOException ex) {
+            } catch (RuntimeException ex) {
                 System.err.println("Could not run gdb: " + ex.getMessage());
             }
         }
@@ -242,7 +285,7 @@ class BinutilsAnalysis extends BinaryAnalysis {
                     if (m.find() && registers.containsKey(m.group(2)))
                         registers.put(m.group(1),registers.get(m.group(2)));
                 }
-            } catch (IOException ex) {
+            } catch (RuntimeException ex) {
                 System.err.println("Could not run gdb: " + ex.getMessage());
             }
         }
@@ -263,106 +306,102 @@ class BinutilsAnalysis extends BinaryAnalysis {
         Map<String, Set<XRef>> xrefs = new HashMap<>();
 
         ProcessBuilder objdumpBuilder = new ProcessBuilder(objdumpCmd, "-j", ".text", "-d", lib);
-        try {
-            for (String line : NativeScanner.runCommand(objdumpBuilder)) {
-                m = addrCodePattern.matcher(line);
-                if (m.find()) {
-                    if (!m.group(3).equals("")) {
-                        String nextAddr = Integer.toHexString(Integer.parseInt(m.group(1),16)+Integer.parseInt("2",16));
+        for (String line : NativeScanner.runCommand(objdumpBuilder)) {
+            m = addrCodePattern.matcher(line);
+            if (m.find()) {
+                if (!m.group(3).equals("")) {
+                    String nextAddr = Integer.toHexString(Integer.parseInt(m.group(1),16)+Integer.parseInt("2",16));
+                    addressCode.put(m.group(1),m.group(2));
+                    addressCode.put(nextAddr,m.group(3));
+                } else {
+                    if (m.group(2).length()==4)
                         addressCode.put(m.group(1),m.group(2));
-                        addressCode.put(nextAddr,m.group(3));
-                    } else {
-                        if (m.group(2).length()==4)
-                            addressCode.put(m.group(1),m.group(2));
-                        else {
-                            addressCode.put(m.group(1),m.group(2).substring(0,4));
-                            String nextAddr = Integer.toHexString(Integer.parseInt(m.group(1),16)+Integer.parseInt("2",16));
-                            addressCode.put(nextAddr, m.group(2).substring(4,8));
-                        }
+                    else {
+                        addressCode.put(m.group(1),m.group(2).substring(0,4));
+                        String nextAddr = Integer.toHexString(Integer.parseInt(m.group(1),16)+Integer.parseInt("2",16));
+                        addressCode.put(nextAddr, m.group(2).substring(4,8));
                     }
                 }
             }
-            for (String line : NativeScanner.runCommand(objdumpBuilder)) {
-                m = funPattern.matcher(line);
+        }
+        for (String line : NativeScanner.runCommand(objdumpBuilder)) {
+            m = funPattern.matcher(line);
+            if (m.find()) {
+                function = m.group(1);
+                if (function.contains("@"))
+                    function = function.substring(0, function.indexOf('@'));
+                registers = new HashMap<>();
+                if (debug)
+                    System.out.println("new function " + function);
+                continue;
+            }
+            try {
+                m = insPattern.matcher(line);
                 if (m.find()) {
-                    function = m.group(1);
-                    if (function.contains("@"))
-                        function = function.substring(0, function.indexOf('@'));
-                    registers = new HashMap<>();
-                    if (debug)
-                        System.out.println("new function " + function);
-                    continue;
-                }
-                try {
-                    m = insPattern.matcher(line);
-                    if (m.find()) {
-                        if (registers == null) {
-                            System.err.println("WARNING: no registers map initialized for 'ins' pattern");
-                            continue;
-                        }
-                        registers.put("pc",m.group(1));
-                        String instruction = m.group(5);
-                        if (m.group(4).equals("ldr")) {
-                            m = ldrPattern.matcher(instruction);
-                            if (m.find()) {
-                                String addr = m.group(2);
-                                String nextAddr = Integer.toHexString(Integer.parseInt(addr,16)+Integer.parseInt("2",16));
-                                String value;
-                                if (addressCode.containsKey(nextAddr))
-                                    value = addressCode.get(nextAddr)+addressCode.get(addr);
-                                else
-                                    value = addressCode.get(addr);
-                                registers.put(m.group(1), value);
-                            }
-                        } else if (m.group(4).equals("ldr.w")) {
-                            m = ldrwPattern.matcher(instruction);
-                            if (m.find()) {
-                                String addr = m.group(2);
-                                String nextAddr = Integer.toHexString(Integer.parseInt(addr,16)+Integer.parseInt("2",16));
-                                String value;
-                                if (addressCode.containsKey(nextAddr))
-                                    value = addressCode.get(nextAddr)+addressCode.get(addr);
-                                else
-                                    value = addressCode.get(addr);
-                                registers.put(m.group(1), value);
-                            }
-                        } else if (m.group(4).contains("add") || m.group(4).equals("adr")) {
-                            m = addPattern.matcher(instruction);
-                            if (m.find() && registers.containsKey(m.group(1)) && registers.containsKey(m.group(2))) {
-                                long address = hexToLong(registers.get(m.group(2)));
-                                if (!m.group(3).equals("")) {
-                                    if (!registers.containsKey(m.group(3)))
-                                        if (m.group(4).contains("#"))
-                                            address += hexToLong(m.group(4).substring(m.group(4).lastIndexOf('#')));
-                                        else
-                                            continue;
-                                    address += hexToLong(registers.get(m.group(3)));
-                                } else
-                                    address += hexToLong(registers.get(m.group(1)));
-                                int len = Long.toHexString(address).length();
-                                if (len>registers.get(m.group(1)).length() && len>registers.get(m.group(2)).length())
-                                    address = hexToLong(Long.toHexString(address).substring(1));
-                                registers.put(m.group(1),Long.toHexString(address));
-                                address += 4;
-                                String str = foundStrings.get(address);
-                                if (str != null) {
-                                    if (debug)
-                                        System.out.println("objdump disassemble string: '" + str + "' -> " + registers.get(m.group(1)));
-                                    registerXRef(xrefs, str, function);
-                                }
-                            }
-                        } else if (m.group(4).equals("mov")) {
-                            m = movPattern.matcher(instruction);
-                            if (m.find() && registers.containsKey(m.group(2)))
-                                registers.put(m.group(1),registers.get(m.group(2)));
-                        }
+                    if (registers == null) {
+                        System.err.println("WARNING: no registers map initialized for 'ins' pattern");
+                        continue;
                     }
-                } catch (NumberFormatException ex) {
-                    System.err.println("Number format error '" + ex.getMessage() + "' in line: " + line);
+                    registers.put("pc",m.group(1));
+                    String instruction = m.group(5);
+                    if (m.group(4).equals("ldr")) {
+                        m = ldrPattern.matcher(instruction);
+                        if (m.find()) {
+                            String addr = m.group(2);
+                            String nextAddr = Integer.toHexString(Integer.parseInt(addr,16)+Integer.parseInt("2",16));
+                            String value;
+                            if (addressCode.containsKey(nextAddr))
+                                value = addressCode.get(nextAddr)+addressCode.get(addr);
+                            else
+                                value = addressCode.get(addr);
+                            registers.put(m.group(1), value);
+                        }
+                    } else if (m.group(4).equals("ldr.w")) {
+                        m = ldrwPattern.matcher(instruction);
+                        if (m.find()) {
+                            String addr = m.group(2);
+                            String nextAddr = Integer.toHexString(Integer.parseInt(addr,16)+Integer.parseInt("2",16));
+                            String value;
+                            if (addressCode.containsKey(nextAddr))
+                                value = addressCode.get(nextAddr)+addressCode.get(addr);
+                            else
+                                value = addressCode.get(addr);
+                            registers.put(m.group(1), value);
+                        }
+                    } else if (m.group(4).contains("add") || m.group(4).equals("adr")) {
+                        m = addPattern.matcher(instruction);
+                        if (m.find() && registers.containsKey(m.group(1)) && registers.containsKey(m.group(2))) {
+                            long address = hexToLong(registers.get(m.group(2)));
+                            if (!m.group(3).equals("")) {
+                                if (!registers.containsKey(m.group(3)))
+                                    if (m.group(4).contains("#"))
+                                        address += hexToLong(m.group(4).substring(m.group(4).lastIndexOf('#')));
+                                    else
+                                        continue;
+                                address += hexToLong(registers.get(m.group(3)));
+                            } else
+                                address += hexToLong(registers.get(m.group(1)));
+                            int len = Long.toHexString(address).length();
+                            if (len>registers.get(m.group(1)).length() && len>registers.get(m.group(2)).length())
+                                address = hexToLong(Long.toHexString(address).substring(1));
+                            registers.put(m.group(1),Long.toHexString(address));
+                            address += 4;
+                            String str = foundStrings.get(address);
+                            if (str != null) {
+                                if (debug)
+                                    System.out.println("objdump disassemble string: '" + str + "' -> " + registers.get(m.group(1)));
+                                registerXRef(xrefs, str, function);
+                            }
+                        }
+                    } else if (m.group(4).equals("mov")) {
+                        m = movPattern.matcher(instruction);
+                        if (m.find() && registers.containsKey(m.group(2)))
+                            registers.put(m.group(1),registers.get(m.group(2)));
+                    }
                 }
+            } catch (NumberFormatException ex) {
+                System.err.println("Number format error '" + ex.getMessage() + "' in line: " + line);
             }
-        } catch (IOException ex) {
-            System.err.println("Could not run objdump: " + ex.getMessage());
         }
         return xrefs;
     }
@@ -379,67 +418,63 @@ class BinutilsAnalysis extends BinaryAnalysis {
         Map<String, Set<XRef>> xrefs = new HashMap<>();
 
         ProcessBuilder objdumpBuilder = new ProcessBuilder(objdumpCmd, "-j", ".text", "-d", lib);
-        try {
-            for (String line : NativeScanner.runCommand(objdumpBuilder)) {
-                m = insPattern.matcher(line);
-                if (m.find() && m.group(3).equals("word"))
-                    words.put(m.group(1),m.group(2));
+        for (String line : NativeScanner.runCommand(objdumpBuilder)) {
+            m = insPattern.matcher(line);
+            if (m.find() && m.group(3).equals("word"))
+                words.put(m.group(1),m.group(2));
+        }
+        for (String line : NativeScanner.runCommand(objdumpBuilder)) {
+            m = funPattern.matcher(line);
+            if (m.find()) {
+                function = m.group(1);
+                registers = new HashMap<>();
+                //System.out.println("new function " + function);
+                continue;
             }
-            for (String line : NativeScanner.runCommand(objdumpBuilder)) {
-                m = funPattern.matcher(line);
-                if (m.find()) {
-                    function = m.group(1);
-                    registers = new HashMap<>();
-                    //System.out.println("new function " + function);
+            m = insPattern.matcher(line);
+            if (m.find()) {
+                if (registers == null) {
+                    System.err.println("WARNING: no registers map initialized for 'ins' pattern");
                     continue;
                 }
-                m = insPattern.matcher(line);
-                if (m.find()) {
-                    if (registers == null) {
-                        System.err.println("WARNING: no registers map initialized for 'ins' pattern");
-                        continue;
-                    }
-                    registers.put("pc",m.group(1));
-                    String instruction = m.group(4);
-                    switch (m.group(3)) {
-                        case "ldr":
-                            m = ldrPattern.matcher(instruction);
-                            if (m.find())
-                                registers.put(m.group(1), words.get(m.group(2)));
-                            break;
-                        case "add":
-                            m = addPattern.matcher(instruction);
-                            if (m.find() && registers.containsKey(m.group(2)) && registers.containsKey(m.group(3))) {
-                                try {
-                                    long address = hexToLong(registers.get(m.group(2))) + 8;
-                                    address += hexToLong(registers.get(m.group(3)));
-                                    String str = foundStrings.get(address);
-                                    if (str != null) {
-                                        if (debug)
-                                            System.out.println("objdump disassemble string: '" + str + "' -> " + registers.get(m.group(1)));
-                                        registerXRef(xrefs, str, function);
-                                    }
-                                } catch (NumberFormatException ex) {
-                                    System.err.println("Number format error '" + ex.getMessage() + "' in line: " + line);
+                registers.put("pc",m.group(1));
+                String instruction = m.group(4);
+                switch (m.group(3)) {
+                    case "ldr":
+                        m = ldrPattern.matcher(instruction);
+                        if (m.find())
+                            registers.put(m.group(1), words.get(m.group(2)));
+                        break;
+                    case "add":
+                        m = addPattern.matcher(instruction);
+                        if (m.find() && registers.containsKey(m.group(2)) && registers.containsKey(m.group(3))) {
+                            try {
+                                long address = hexToLong(registers.get(m.group(2))) + 8;
+                                address += hexToLong(registers.get(m.group(3)));
+                                String str = foundStrings.get(address);
+                                if (str != null) {
+                                    if (debug)
+                                        System.out.println("objdump disassemble string: '" + str + "' -> " + registers.get(m.group(1)));
+                                    registerXRef(xrefs, str, function);
                                 }
+                            } catch (NumberFormatException ex) {
+                                System.err.println("Number format error '" + ex.getMessage() + "' in line: " + line);
                             }
-                            break;
-                        case "mov":
-                            m = movPattern.matcher(instruction);
-                            if (m.find() && registers.containsKey(m.group(2)))
-                                registers.put(m.group(1), registers.get(m.group(2)));
-                            break;
-                    }
+                        }
+                        break;
+                    case "mov":
+                        m = movPattern.matcher(instruction);
+                        if (m.find() && registers.containsKey(m.group(2)))
+                            registers.put(m.group(1), registers.get(m.group(2)));
+                        break;
                 }
             }
-        } catch (IOException ex) {
-            System.err.println("Could not run objdump: " + ex.getMessage());
         }
         return xrefs;
     }
 
     @Override
-    public Section getSection(String sectionName) throws IOException {
+    public Section getSection(String sectionName) {
         ProcessBuilder builder = new ProcessBuilder(objdumpCmd, "--headers", lib);
         List<String> lines = NativeScanner.runCommand(builder);
         for (String line : lines) {
@@ -454,7 +489,7 @@ class BinutilsAnalysis extends BinaryAnalysis {
                 int size = BinaryAnalysis.hexToInt(parts[2]);
                 long vma = BinaryAnalysis.hexToLong(parts[3]);
                 long offset = BinaryAnalysis.hexToLong(parts[5]);
-                return new Section(secName, arch, lib, size, vma, offset);
+                return new Section(secName, lib, size, vma, offset);
             } catch (NumberFormatException ex) {
                 if (debug)
                     System.err.println("NumberFormatException: " + ex.getMessage());
@@ -494,7 +529,7 @@ class BinutilsAnalysis extends BinaryAnalysis {
      * @return          a list of lines containing entry points
      */
     @SuppressWarnings("UseBulkOperation")
-    private List<String> libSymbols(String lib, boolean demangle) throws IOException {
+    private List<String> libSymbols(String lib, boolean demangle) {
         List<String> ids = new LinkedList<>();
 
         List<String> nmInvocation = new ArrayList<>();
@@ -554,7 +589,7 @@ class BinutilsAnalysis extends BinaryAnalysis {
     }
 
     @Override
-    public void initEntryPoints() throws IOException {
+    public void initEntryPoints() {
         // Demangling interacts poorly with libraries lacking
         // symbol tables and is thus turned off.
         List<String> symbols = libSymbols(lib, demangle);

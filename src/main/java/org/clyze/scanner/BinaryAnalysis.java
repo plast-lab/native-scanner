@@ -32,8 +32,11 @@ public abstract class BinaryAnalysis {
     /** String precision option. */
     private final boolean onlyPreciseNativeStrings;
 
+    /** A dictionary of library properties. */
+    protected Map<String, String> info = null;
+
     /** The native code architecture. */
-    Arch arch;
+    protected Arch libArch;
 
     BinaryAnalysis(NativeDatabaseConsumer dbc, String lib,
                    boolean onlyPreciseNativeStrings, boolean truncateTo32Bits) {
@@ -44,9 +47,9 @@ public abstract class BinaryAnalysis {
 
         // Auto-detect architecture.
         try {
-            this.arch = autodetectArch();
+            this.libArch = autodetectArch();
         } catch (IOException ex) {
-            this.arch = Arch.DEFAULT_ARCH;
+            this.libArch = Arch.DEFAULT_ARCH;
         }
     }
 
@@ -81,11 +84,36 @@ public abstract class BinaryAnalysis {
     abstract protected Arch autodetectArch() throws IOException;
 
     /**
+     * A getter of the "info" field.
+     *
+     * @return the "info" mapping
+     * @throws IOException if the mapping could not be computed
+     */
+    abstract protected Map<String, String> getNativeCodeInfo() throws IOException;
+
+    /**
+     * Autodetect the endianness of the target architecture.
+     *
+     * @return if true, architecture is little-endian, big-endian otherwise
+     */
+    protected boolean isLittleEndian() throws IOException {
+        return getNativeCodeInfo().get("endian").equals("little");
+    }
+
+    /**
+     * Determine the word size of the target architecture.
+     *
+     * @return the word size (in bytes)
+     * @throws IOException if the word size could not be computed
+     */
+    abstract protected int getWordSize() throws IOException;
+
+    /**
      * Returns a list of pointer values that may point to global data.
      */
     private Set<Long> getGlobalDataPointers() throws IOException {
         Section data = getSection(".data");
-        return data == null ? null : data.analyzeWords();
+        return data == null ? null : data.analyzeWords(getWordSize(), isLittleEndian());
     }
 
     /**
