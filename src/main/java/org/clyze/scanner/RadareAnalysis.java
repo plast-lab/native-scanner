@@ -76,26 +76,28 @@ class RadareAnalysis extends BinaryAnalysis {
      * @return a map of address-to-string entries
      */
     @Override
-    public SortedMap<Long, String> findStrings() throws IOException {
+    public SortedMap<Long, String> findStrings() {
         System.out.println("Finding strings with Radare2...");
         SortedMap<Long, String> strings = super.findStrings();
-
-        File outFile = File.createTempFile("strings-out", ".txt");
-
-        runRadare("strings", lib, outFile.getCanonicalPath());
-
-        Consumer<ArrayList<String>> proc = (l -> {
-                String vAddrStr = l.get(0);
-                String s = l.get(1);
-                long vAddr = UNKNOWN_ADDRESS;
-                try {
-                    vAddr = hexToLong(vAddrStr);
-                } catch (NumberFormatException ex) {
-                    System.err.println("WARNING: error parsing string address: " + vAddrStr);
-                }
-                strings.put(vAddr, s);
-            });
-        processMultiColumnFile(outFile, STR_MARKER, 2, proc);
+        try {
+            File outFile = File.createTempFile("strings-out", ".txt");
+            runRadare("strings", lib, outFile.getCanonicalPath());
+            Consumer<ArrayList<String>> proc = (l -> {
+                    String vAddrStr = l.get(0);
+                    String s = l.get(1);
+                    long vAddr = UNKNOWN_ADDRESS;
+                    try {
+                        vAddr = hexToLong(vAddrStr);
+                    } catch (NumberFormatException ex) {
+                        System.err.println("WARNING: error parsing string address: " + vAddrStr);
+                    }
+                    strings.put(vAddr, s);
+                });
+            processMultiColumnFile(outFile, STR_MARKER, 2, proc);
+        } catch (IOException ex) {
+            ex.printStackTrace();
+            throw new RuntimeException("Could not read strings.");
+        }
         return strings;
     }
 
@@ -214,23 +216,28 @@ class RadareAnalysis extends BinaryAnalysis {
     }
 
     @Override
-    protected synchronized Map<String, String> getNativeCodeInfo() throws IOException {
+    protected synchronized Map<String, String> getNativeCodeInfo() {
         if (info == null) {
-            File outFile = File.createTempFile("info-out", ".txt");
-            runRadare("info", lib, outFile.getCanonicalPath());
-            this.info = new HashMap<>();
-            Consumer<ArrayList<String>> proc = (l -> {
-                String key = l.get(0);
-                String value = l.get(1);
-                this.info.put(key.trim(), value.trim());
-            });
-            processMultiColumnFile(outFile, INFO_MARKER, 2, proc);
+            try {
+                File outFile = File.createTempFile("info-out", ".txt");
+                runRadare("info", lib, outFile.getCanonicalPath());
+                this.info = new HashMap<>();
+                Consumer<ArrayList<String>> proc = (l -> {
+                        String key = l.get(0);
+                        String value = l.get(1);
+                        this.info.put(key.trim(), value.trim());
+                    });
+                processMultiColumnFile(outFile, INFO_MARKER, 2, proc);
+            } catch (IOException ex) {
+                ex.printStackTrace();
+                throw new RuntimeException("Could not read native code properties.");
+            }
         }
         return this.info;
     }
 
     @Override
-    protected boolean isLittleEndian() throws IOException {
+    protected boolean isLittleEndian() {
         return getNativeCodeInfo().get("endian").equals("little");
     }
 
@@ -253,7 +260,7 @@ class RadareAnalysis extends BinaryAnalysis {
     }
 
     @Override
-    protected Arch autodetectArch() throws IOException {
+    protected Arch autodetectArch() {
         Map<String, String> info = getNativeCodeInfo();
 
         String arch = info.get("arch");

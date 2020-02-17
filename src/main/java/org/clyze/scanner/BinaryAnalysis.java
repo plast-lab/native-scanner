@@ -46,11 +46,7 @@ public abstract class BinaryAnalysis {
         this.truncateTo32Bits = truncateTo32Bits;
 
         // Auto-detect architecture.
-        try {
-            this.libArch = autodetectArch();
-        } catch (IOException ex) {
-            this.libArch = Arch.DEFAULT_ARCH;
-        }
+        this.libArch = autodetectArch();
     }
 
     /**
@@ -58,11 +54,18 @@ public abstract class BinaryAnalysis {
      *
      * @return a map of address-to-string entries
      */
-    public SortedMap<Long, String> findStrings() throws IOException {
-        Section rodata = getSection(".rodata");
-        if (rodata == null)
-            rodata = getSection(".rdata");
-        return rodata == null ? new TreeMap<>() : rodata.strings();
+    public SortedMap<Long, String> findStrings() {
+        try {
+            Section rodata = getSection(".rodata");
+            if (rodata == null)
+                rodata = getSection(".rdata");
+            if (rodata != null)
+                return rodata.strings();
+        } catch (IOException ex) {
+            ex.printStackTrace();
+            throw new RuntimeException("Could not read strings.");
+        }
+        return new TreeMap<>();
     }
 
     /**
@@ -80,23 +83,24 @@ public abstract class BinaryAnalysis {
 
     /**
      * Autodetect the target hardware architecture.
+     *
+     * @return the architecture
      */
-    abstract protected Arch autodetectArch() throws IOException;
+    abstract protected Arch autodetectArch();
 
     /**
      * A getter of the "info" field.
      *
      * @return the "info" mapping
-     * @throws IOException if the mapping could not be computed
      */
-    abstract protected Map<String, String> getNativeCodeInfo() throws IOException;
+    abstract protected Map<String, String> getNativeCodeInfo();
 
     /**
      * Autodetect the endianness of the target architecture.
      *
      * @return if true, architecture is little-endian, big-endian otherwise
      */
-    protected boolean isLittleEndian() throws IOException {
+    protected boolean isLittleEndian() {
         return getNativeCodeInfo().get("endian").equals("little");
     }
 
