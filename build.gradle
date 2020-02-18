@@ -24,10 +24,20 @@ configurations.all {
     resolutionStrategy.cacheDynamicVersionsFor 0, 'seconds'
 }
 
+dependencies {
+    testImplementation('org.junit.jupiter:junit-jupiter-api:5.4.2')
+    testRuntime('org.junit.jupiter:junit-jupiter-engine:5.4.2')
+}
+
 jar {
     manifest {
         attributes 'Implementation-Version' : archiveVersion
     }
+}
+
+test {
+    useJUnitPlatform()
+    maxHeapSize = '1G'
 }
 
 task sourcesJar(type: Jar, dependsOn: classes) {
