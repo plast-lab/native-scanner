@@ -258,6 +258,17 @@ public class NativeScanner {
         }
     }
 
+    /**
+     * Factory method that creates a binary analysis for a target native code library.
+     *
+     * @param dbc                  the database consumer to use
+     * @param radareMode           if true, a Radare analysis will be returned, if false, a binutils analysis
+     * @param lib                  the path to the native code library
+     * @param onlyPreciseStrings   only record strings with known position in the code
+     * @param truncateAddresses    truncate addresses to 32-bit
+     * @param demangle             do name demanging (on binutils analysis)
+     * @return a binary analysis configured for the target native code library
+     */
     public static BinaryAnalysis create(NativeDatabaseConsumer dbc, boolean radareMode,
                                         String lib, boolean onlyPreciseStrings,
                                         boolean truncateAddresses, boolean demangle) {
