@@ -64,8 +64,8 @@ or equivalent binary SDK distribution).
 For the standalone application, pass `--help` to see the available
 options.
 
-For the library, instantiate a NativeScanner object and use its
-`scanLib()` method to scan a native library. To consume the results,
-implement interface `DatabaseConsumer`. See the standalone entry point
-org.clyze.scanner.Main.main() for an actual piece of code using this
-library.
+For the library, instantiate a NativeScanner object and a BinaryAnalysis
+object, and use method `NativeScanner.scanBinaryCode()` to scan a native
+library. To consume the results, implement interface `NativeDatabaseConsumer`.
+See the standalone entry point org.clyze.scanner.Main.main() for an actual
+piece of code using this library.
