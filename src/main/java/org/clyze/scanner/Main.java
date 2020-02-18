@@ -90,7 +90,7 @@ public class Main {
         System.out.println("Options:");
         System.out.println("  " + OPT_HELP + "                    Print this help message.");
         System.out.println("  " + OPT_ONLY_PRECISE_STRINGS + "    Filter out strings without position information.");
-        System.out.println("  " + OPT_BINUTILS + "                Use binutils mode.");
+        System.out.println("  " + OPT_BINUTILS + "                Use binutils mode (default).");
         System.out.println("  " + OPT_RADARE + "                  Use Radare2 mode.");
         System.out.println("  " + OPT_TRUNCATE_ADDRESSES + "      Truncate addresses to fit in 32 bits.");
         System.out.println("  " + OPT_METHOD_STRINGS + "<FILE>   Use method strings from <FILE> for filtering." );

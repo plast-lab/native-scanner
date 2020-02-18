@@ -62,7 +62,7 @@ or equivalent binary SDK distribution).
 ## Use ##
 
 For the standalone application, pass `--help` to see the available
-options. The results will be printed on screen.
+options.
 
 For the library, instantiate a NativeScanner object and use its
 `scanLib()` method to scan a native library. To consume the results,
