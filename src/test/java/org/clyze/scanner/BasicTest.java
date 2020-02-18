@@ -23,24 +23,22 @@ public class BasicTest {
         }
     }
 
+    @SuppressWarnings("ConstantConditions")
     @Test
     public void libraryStringsMatch() {
         CheckPair p = new CheckPair();
-        NativeDatabaseConsumer dbc = new NativeDatabaseConsumer() {
-                    @Override
-                    public void add(String predicateFile, String arg, String... args) {
-                        // System.out.println(predicateFile + "('" + args[1] + "')");
-                        if (predicateFile.equals(BinaryAnalysis.NATIVE_METHODTYPE_CANDIDATE) &&
-                            args[1].equals("(IIIII)V")) {
-                            System.out.println("Found: " + args[1]);
-                            p.methodTypeFound = true;
-                        } else if (predicateFile.equals(BinaryAnalysis.NATIVE_NAME_CANDIDATE) &&
-                                   args[1].equals("setPtyWindowSizeInternal")) {
-                            System.out.println("Found: " + args[1]);
-                            p.methodNameFound = true;
-                        }
-                    }
-            };
+        NativeDatabaseConsumer dbc = (predicateFile, arg, args) -> {
+            // System.out.println(predicateFile + "('" + args[1] + "')");
+            if (predicateFile.equals(BinaryAnalysis.NATIVE_METHODTYPE_CANDIDATE) &&
+                args[1].equals("(IIIII)V")) {
+                System.out.println("Found: " + args[1]);
+                p.methodTypeFound = true;
+            } else if (predicateFile.equals(BinaryAnalysis.NATIVE_NAME_CANDIDATE) &&
+                       args[1].equals("setPtyWindowSizeInternal")) {
+                System.out.println("Found: " + args[1]);
+                p.methodNameFound = true;
+            }
+        };
         // NativeDatabaseConsumer dbc = new BasicDatabaseConsumer();
 
         String libPath = getTestNativeLibrary();
