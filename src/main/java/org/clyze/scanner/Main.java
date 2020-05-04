@@ -4,6 +4,9 @@ import java.io.*;
 import java.nio.file.Files;
 import java.util.*;
 import java.util.stream.Stream;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipFile;
+import java.util.zip.ZipInputStream;
 
 /**
  * The command-line entry point of the native scanner.
@@ -79,8 +82,23 @@ public class Main {
             BasicDatabaseConsumer dbc = new BasicDatabaseConsumer();
             NativeScanner scanner = new NativeScanner(methodStrings);
             String lib = f.getAbsolutePath();
-            BinaryAnalysis analysis = NativeScanner.create(dbc, radareMode, lib, onlyPreciseStrings, truncateAddresses, demangle);
-            scanner.scanBinaryCode(analysis);
+            if (lib.endsWith(".apk") || lib.endsWith(".jar") || lib.endsWith(".aar")) {
+                try (ZipInputStream zin = new ZipInputStream(new FileInputStream(f)); ZipFile zipFile = new ZipFile(f)) {
+                    ZipEntry entry;
+                    while ((entry = zin.getNextEntry()) != null) {
+                        /* Skip directories */
+                        if (!entry.isDirectory())
+                            scanner.scanArchiveEntry(dbc, radareMode, onlyPreciseStrings,
+                                    demangle, truncateAddresses, zipFile, entry,
+                                    entry.getName().toLowerCase());
+                    }
+                } catch (IOException ex) {
+                    ex.printStackTrace();
+                }
+            } else {
+                BinaryAnalysis analysis = NativeScanner.create(dbc, radareMode, lib, onlyPreciseStrings, truncateAddresses, demangle);
+                scanner.scanBinaryCode(analysis);
+            }
             dbc.getProduct().forEach(System.out::println);
         }
     }

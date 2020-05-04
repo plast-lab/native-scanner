@@ -1,7 +1,10 @@
 package org.clyze.scanner;
 
 import java.io.*;
+import java.nio.file.Files;
 import java.util.*;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipFile;
 
 /**
  * The basic object that controls scanning of libraries.
@@ -275,6 +278,65 @@ public class NativeScanner {
         return radareMode ?
             new RadareAnalysis(dbc, lib, onlyPreciseStrings, truncateAddresses)  :
             new BinutilsAnalysis(dbc, lib, onlyPreciseStrings, truncateAddresses, demangle);
+    }
+
+    /**
+     * Process an entry inside a compressed archive (ZIP-based formats: JAR/AAR/APK).
+     *
+     * @param dbc                  the database consumer to use
+     * @param radareMode           if true, a Radare analysis will be returned, if false, a binutils analysis
+     * @param onlyPreciseStrings   only record strings with known position in the code
+     * @param truncateAddresses    truncate addresses to 32-bit
+     * @param demangle             do name demanging (on binutils analysis)
+     * @param file                 the ZIP file
+     * @param entry                the ZIP entry
+     * @param entryName            the name of the ZIP entry
+     */
+    public void scanArchiveEntry(NativeDatabaseConsumer dbc, boolean radareMode,
+                                 boolean onlyPreciseStrings, boolean truncateAddresses,
+                                 boolean demangle, ZipFile file, ZipEntry entry,
+                                 String entryName) throws IOException {
+        boolean isSO = entryName.endsWith(".so");
+        boolean isDylib = entryName.endsWith(".dylib");
+        boolean isDLL = entryName.toLowerCase().endsWith(".dll");
+        boolean isLibsXZS = entryName.endsWith("libs.xzs");
+        boolean isLibsZSTD = entryName.endsWith("libs.zstd");
+
+        if (isSO || isDylib || isDLL || isLibsXZS || isLibsZSTD) {
+            File libTmpFile = extractZipEntryAsFile("native-lib", file, entry, entryName);
+            String libPath = libTmpFile.getCanonicalPath();
+            // Handle some special formats.
+            if (isLibsXZS)
+                libPath = NativeScanner.getXZSLib(libPath);
+            else if (isLibsZSTD)
+                libPath = NativeScanner.getZSTDLib(libPath);
+            BinaryAnalysis analysis = NativeScanner.create(dbc, radareMode, libPath, onlyPreciseStrings, truncateAddresses, demangle);
+            // Check that the current mode supports .dll inputs.
+            if (isDLL && !radareMode)
+                System.err.println("WARNING: Radare mode should be activated to scan library " + entryName);
+
+            scanBinaryCode(analysis);
+        }
+    }
+
+    /**
+     * Helper method to extract an entry inside a ZIP archive and save
+     * it as a file.
+     *
+     * @param tmpDirName   a name for the intermediate temporary directory
+     * @param zipFile      the ZIP archive
+     * @param entry        the archive entry
+     * @param entryName    the name of the entry
+     * @return             the output file
+     */
+    private static File extractZipEntryAsFile(String tmpDirName, ZipFile zipFile, ZipEntry entry, String entryName) throws IOException {
+        File tmpDir = Files.createTempDirectory(tmpDirName).toFile();
+        tmpDir.deleteOnExit();
+        String tmpName = entryName.replaceAll(File.separator, "_");
+        File libTmpFile = new File(tmpDir, tmpName);
+        libTmpFile.deleteOnExit();
+        Files.copy(zipFile.getInputStream(entry), libTmpFile.toPath());
+        return libTmpFile;
     }
 }
 
