@@ -83,18 +83,7 @@ public class Main {
             NativeScanner scanner = new NativeScanner(methodStrings);
             String lib = f.getAbsolutePath();
             if (lib.endsWith(".apk") || lib.endsWith(".jar") || lib.endsWith(".aar")) {
-                try (ZipInputStream zin = new ZipInputStream(new FileInputStream(f)); ZipFile zipFile = new ZipFile(f)) {
-                    ZipEntry entry;
-                    while ((entry = zin.getNextEntry()) != null) {
-                        /* Skip directories */
-                        if (!entry.isDirectory())
-                            scanner.scanArchiveEntry(dbc, radareMode, onlyPreciseStrings,
-                                    demangle, truncateAddresses, zipFile, entry,
-                                    entry.getName().toLowerCase());
-                    }
-                } catch (IOException ex) {
-                    ex.printStackTrace();
-                }
+                scanner.scanArchive(dbc, radareMode, onlyPreciseStrings, truncateAddresses, demangle, f);
             } else {
                 BinaryAnalysis analysis = NativeScanner.create(dbc, radareMode, lib, onlyPreciseStrings, truncateAddresses, demangle);
                 scanner.scanBinaryCode(analysis);

@@ -5,6 +5,7 @@ import java.nio.file.Files;
 import java.util.*;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
+import java.util.zip.ZipInputStream;
 
 /**
  * The basic object that controls scanning of libraries.
@@ -280,6 +281,33 @@ public class NativeScanner {
             new BinutilsAnalysis(dbc, lib, onlyPreciseStrings, truncateAddresses, demangle);
     }
 
+    /**
+     * Scan the native code in a compressed archive (ZIP-based formats: JAR/AAR/APK).
+     * @param dbc                  the database consumer to use
+     * @param radareMode           if true, a Radare analysis will be returned, if false, a binutils analysis
+     * @param onlyPreciseStrings   only record strings with known position in the code
+     * @param truncateAddresses    truncate addresses to 32-bit
+     * @param demangle             do name demanging (on binutils analysis)
+     * @param f                    the ZIP file
+     */
+    public void scanArchive(NativeDatabaseConsumer dbc, boolean radareMode,
+                            boolean onlyPreciseStrings, boolean truncateAddresses,
+                            boolean demangle, File f) {
+        try (ZipInputStream zin = new ZipInputStream(new FileInputStream(f));
+             ZipFile zipFile = new ZipFile(f)) {
+            ZipEntry entry;
+            while ((entry = zin.getNextEntry()) != null) {
+                /* Skip directories */
+                if (!entry.isDirectory())
+                    scanArchiveEntry(dbc, radareMode, onlyPreciseStrings,
+                            demangle, truncateAddresses, zipFile, entry,
+                            entry.getName().toLowerCase());
+            }
+        } catch (IOException ex) {
+            ex.printStackTrace();
+        }
+
+    }
     /**
      * Process an entry inside a compressed archive (ZIP-based formats: JAR/AAR/APK).
      *
