@@ -133,11 +133,11 @@ public class NativeScanner {
 
     private static boolean isName(String line) {
         char[] chars = line.toCharArray();
-        for (int i = 0; i < line.length(); i++) {
+        if (line.length() == 0 || !Character.isJavaIdentifierStart(chars[0]))
+            return false;
+        for (int i = 1; i < line.length(); i++) {
             char c = chars[i];
-            if ((c != '$') && (c != '/') && (c != '_') &&
-                (c != '<') && (c != '>') &&
-                !Character.isLetterOrDigit(c)) {
+            if (!Character.isJavaIdentifierPart(c)) {
                 if (debug)
                     System.err.println("isName(): Rejecting char '" + c + "' : " + line);
                 return false;
