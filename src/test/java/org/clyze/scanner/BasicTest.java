@@ -47,7 +47,7 @@ public class BasicTest {
         boolean truncateAddresses = false;
         boolean demangle = false;
         BinaryAnalysis analysis = NativeScanner.create(dbc, radareMode, libPath, onlyPreciseStrings, truncateAddresses, demangle);
-        (new NativeScanner(null)).scanBinaryCode(analysis);
+        (new NativeScanner(true, null)).scanBinaryCode(analysis);
 
         assertTrue(p.methodNameFound);
         assertTrue(p.methodTypeFound);

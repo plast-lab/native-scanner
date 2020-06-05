@@ -15,16 +15,20 @@ public class NativeScanner {
     private final static boolean debug = false;
     /** The method strings to use for improving precision. */
     private final Set<String> methodStrings;
+    /** If false, no string-xrefs will be computed. */
+    private final boolean computeXRefs;
 
     /**
      * Create a native scanner object, to be used for analyzing native
      * libraries.
      *
+     * @param computeXRefs          if false, don't do string-xrefs analysis
      * @param methodStrings         a list of method substrings (names and
      *                              type descriptors) to use for filtering -- set to
      *                              null to disable this filtering
      */
-    public NativeScanner(Set<String> methodStrings) {
+    public NativeScanner(boolean computeXRefs, Set<String> methodStrings) {
+        this.computeXRefs = computeXRefs;
         this.methodStrings = methodStrings;
 
         if (methodStrings != null)
@@ -96,12 +100,18 @@ public class NativeScanner {
         }
 
         // Find in which function every string is used.
-        long xrefsTime1 = System.currentTimeMillis();
-        Map<String, Set<XRef>> xrefs = analysis.findXRefs(strings);
-        long xrefsTime2 = System.currentTimeMillis();
-        System.out.println("Computed " + xrefs.size() + " xrefs (time: " + ((xrefsTime2 - xrefsTime1) / 1000.0) + " sec)");
-        if (debug)
-            xrefs.forEach ((k, v) -> System.out.println("XREF: '" + k + "' -> " + v) );
+        Map<String, Set<XRef>> xrefs;
+        if (computeXRefs) {
+            long xrefsTime1 = System.currentTimeMillis();
+            xrefs = analysis.findXRefs(strings);
+            long xrefsTime2 = System.currentTimeMillis();
+            System.out.println("Computed " + xrefs.size() + " xrefs (time: " + ((xrefsTime2 - xrefsTime1) / 1000.0) + " sec)");
+            if (debug)
+                xrefs.forEach ((k, v) -> System.out.println("XREF: '" + k + "' -> " + v) );
+        } else {
+            xrefs = new HashMap<>();
+            strings.forEach((k, s) -> xrefs.put(s, new HashSet<>()));
+        }
 
         // Write out facts: first write names and method types that
         // belong to known functions, then write everything else (that

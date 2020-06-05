@@ -80,7 +80,7 @@ public class Main {
         // A simple consumer to show the results on screen.
         for (File f : inputs) {
             BasicDatabaseConsumer dbc = new BasicDatabaseConsumer();
-            NativeScanner scanner = new NativeScanner(methodStrings);
+            NativeScanner scanner = new NativeScanner(true, methodStrings);
             String lib = f.getAbsolutePath();
             if (lib.endsWith(".apk") || lib.endsWith(".jar") || lib.endsWith(".aar")) {
                 scanner.scanArchive(dbc, radareMode, onlyPreciseStrings, truncateAddresses, demangle, f);
