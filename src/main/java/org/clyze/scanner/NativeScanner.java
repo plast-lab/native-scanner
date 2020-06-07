@@ -142,6 +142,9 @@ public class NativeScanner {
     }
 
     private static boolean isName(String line) {
+        // We assume that "<clinit>()" are not called by JNI code, only constructors.
+        if (line.equals("<init>"))
+            return true;
         char[] chars = line.toCharArray();
         if (line.length() == 0 || !Character.isJavaIdentifierStart(chars[0]))
             return false;
