@@ -19,6 +19,7 @@ public class Main {
     private static final String OPT_METHOD_STRINGS = "--method-strings=";
     private static final String OPT_TRUNCATE_ADDRESSES = "--truncate-addresses";
     private static final String OPT_DEMANGLE_ENTRY_POINTS = "--demangle-entry-points";
+    private static final String OPT_NO_XREF = "--no-xref";
 
     public static void main(String[] args) {
         if (args.length == 0) {
@@ -31,9 +32,10 @@ public class Main {
         boolean radareMode = false;
         boolean truncateAddresses = false;
         boolean demangle = false;
+        boolean computeXRefs = true;
         Set<String> methodStrings = null;
         List<File> inputs = new ArrayList<>();
-        
+
         for (String arg : args) {
             if (OPT_HELP.equals(arg)) {
                 printUsage();
@@ -48,6 +50,8 @@ public class Main {
                 truncateAddresses = true;
             else if (OPT_DEMANGLE_ENTRY_POINTS.equals(arg))
                 demangle = true;
+            else if (OPT_NO_XREF.equals(arg))
+                computeXRefs = false;
             else if (arg.startsWith(OPT_METHOD_STRINGS)) {
                 File msFile = new File(arg.substring(OPT_METHOD_STRINGS.length()));
                 if (!msFile.exists()) {
@@ -80,7 +84,7 @@ public class Main {
         // A simple consumer to show the results on screen.
         for (File f : inputs) {
             BasicDatabaseConsumer dbc = new BasicDatabaseConsumer();
-            NativeScanner scanner = new NativeScanner(true, methodStrings);
+            NativeScanner scanner = new NativeScanner(computeXRefs, methodStrings);
             String lib = f.getAbsolutePath();
             if (lib.endsWith(".apk") || lib.endsWith(".jar") || lib.endsWith(".aar")) {
                 scanner.scanArchive(dbc, radareMode, onlyPreciseStrings, truncateAddresses, demangle, f);
@@ -102,5 +106,6 @@ public class Main {
         System.out.println("  " + OPT_TRUNCATE_ADDRESSES + "      Truncate addresses to fit in 32 bits.");
         System.out.println("  " + OPT_METHOD_STRINGS + "<FILE>   Use method strings from <FILE> for filtering." );
         System.out.println("  " + OPT_DEMANGLE_ENTRY_POINTS + "   Demangle names of C++ entry points.");
+        System.out.println("  " + OPT_NO_XREF + "                 Skip string-xrefs analysis.");
     }
 }
