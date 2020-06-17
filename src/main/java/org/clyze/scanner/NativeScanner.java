@@ -332,6 +332,7 @@ public class NativeScanner {
      * @param file                 the ZIP file
      * @param entry                the ZIP entry
      * @param entryName            the name of the ZIP entry
+     * @throws IOException on archive scan I/O error
      */
     public void scanArchiveEntry(NativeDatabaseConsumer dbc, boolean radareMode,
                                  boolean onlyPreciseStrings, boolean truncateAddresses,
