@@ -1,5 +1,6 @@
 package org.clyze.scanner;
 
+import java.io.File;
 import java.util.*;
 import java.util.regex.*;
 
@@ -107,31 +108,49 @@ public class BinutilsAnalysis extends BinaryAnalysis {
 
     @Override
     public Arch autodetectArch() {
-        ProcessBuilder pb = new ProcessBuilder("file", lib);
-        libArch = null;
-        for (String line : NativeScanner.runCommand(pb)) {
-            if (line.contains("80386")) {
-                libArch = Arch.X86;
-                break;
-            } else if (line.contains("x86-64")) {
-                libArch = Arch.X86_64;
-                break;
-            } else if (line.contains("aarch64")) {
-                libArch = Arch.AARCH64;
-                break;
-            } else if (line.contains("ARM") || line.contains("EABI")) {
-                libArch = Arch.ARMEABI;
-                break;
-            } else if (line.contains("MIPS")) {
-                libArch = Arch.MIPS;
-                break;
+        try {
+            String util = "file";
+            ProcessBuilder pb = new ProcessBuilder(util, lib);
+            libArch = null;
+            for (String line : NativeScanner.runCommand(pb)) {
+                if (line.contains("80386")) {
+                    libArch = Arch.X86;
+                    break;
+                } else if (line.contains("x86-64")) {
+                    libArch = Arch.X86_64;
+                    break;
+                } else if (line.contains("aarch64")) {
+                    libArch = Arch.AARCH64;
+                    break;
+                } else if (line.contains("ARM") || line.contains("EABI")) {
+                    libArch = Arch.ARMEABI;
+                    break;
+                } else if (line.contains("MIPS")) {
+                    libArch = Arch.MIPS;
+                    break;
+                }
             }
-        }
-        if (libArch != null)
-            System.out.println("Detected architecture of " + lib + " is " + libArch);
-        else {
-            libArch = Arch.DEFAULT_ARCH;
-            System.out.println("Could not determine architecture of " + lib + ", using default: " + libArch);
+            if (libArch != null)
+                System.out.println("Detected architecture of " + lib + " is " + libArch);
+            else {
+                libArch = Arch.DEFAULT_ARCH;
+                throw new RuntimeException("Could not determine architecture of " + lib + " using '" + util +"'.");
+            }
+        } catch (Exception ex) {
+            System.err.println("Error: " + ex.getMessage());
+            // For systems where 'file' is not available, use a heuristic.
+            if (lib.contains(File.separator + "armeabi-v7a" + File.separator))
+                libArch = Arch.ARMEABI;
+            else if (lib.contains(File.separator + "arm64-v8a" + File.separator))
+                libArch = Arch.AARCH64;
+            else if (lib.contains(File.separator + "x86" + File.separator))
+                libArch = Arch.X86;
+            else if (lib.contains(File.separator + "x86_64" + File.separator))
+                libArch = Arch.X86_64;
+            else {
+                libArch = Arch.DEFAULT_ARCH;
+                System.out.println("Could not determine architecture of " + lib + ", using default: " + libArch);
+            }
         }
         return libArch;
     }
