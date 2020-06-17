@@ -374,7 +374,16 @@ public class NativeScanner {
     private static File extractZipEntryAsFile(String tmpDirName, ZipFile zipFile, ZipEntry entry, String entryName) throws IOException {
         File tmpDir = Files.createTempDirectory(tmpDirName).toFile();
         tmpDir.deleteOnExit();
-        String tmpName = entryName.replaceAll(File.separator, "_");
+        // Replace all directory separator characters with an underscore.
+        // Do not use String.replaceAll(), since it chokes on Windows separators.
+        StringBuilder sb = new StringBuilder();
+        String sep = File.separator;
+        for (char c : entryName.toCharArray())
+            if (sep.equals(c))
+                sb.append("_");
+            else
+                sb.append(c);
+        String tmpName = sb.toString();
         File libTmpFile = new File(tmpDir, tmpName);
         libTmpFile.deleteOnExit();
         Files.copy(zipFile.getInputStream(entry), libTmpFile.toPath());
