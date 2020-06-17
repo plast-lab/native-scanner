@@ -1,7 +1,9 @@
 package org.clyze.scanner;
 
 import java.io.*;
+import java.nio.file.CopyOption;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.*;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
@@ -386,9 +388,29 @@ public class NativeScanner {
         String tmpName = sb.toString();
         File libTmpFile = new File(tmpDir, tmpName);
         libTmpFile.deleteOnExit();
-        Files.copy(zipFile.getInputStream(entry), libTmpFile.toPath());
+        copy(zipFile.getInputStream(entry), libTmpFile.toPath());
         return libTmpFile;
     }
+
+    /**
+     * Like Files.copy(), but creates the parent directory of the destination.
+     *
+     * @param in           the input stream to read
+     * @param target       the target path to write
+     * @param options      possible options
+     * @return             the number of processed bytes
+     * @throws IOException on error
+     */
+    public static long copy(InputStream in, Path target, CopyOption... options) throws IOException {
+        Path parent = target.getParent();
+        if (parent != null) {
+            File fParent = parent.toFile();
+            if (!fParent.exists())
+                fParent.mkdirs();
+        }
+        return Files.copy(in, target, options);
+    }
+
 }
 
 class SymbolInfo {
