@@ -611,15 +611,19 @@ public class BinutilsAnalysis extends BinaryAnalysis {
 
     @Override
     public void initEntryPoints() {
-        // Demangling interacts poorly with libraries lacking
-        // symbol tables and is thus turned off.
-        List<String> symbols = libSymbols(lib, demangle);
-        if (check)
-            checkSymbols(symbols, lib);
-        for (String symbol : symbols) {
-            EntryPoint ep = EntryPoint.fromNmOutput(symbol);
-            if (ep != null)
-                entryPoints.put(ep.addr, ep.name);
+        try {
+            // Demangling interacts poorly with libraries lacking
+            // symbol tables and is thus turned off.
+            List<String> symbols = libSymbols(lib, demangle);
+            if (check)
+                checkSymbols(symbols, lib);
+            for (String symbol : symbols) {
+                EntryPoint ep = EntryPoint.fromNmOutput(symbol);
+                if (ep != null)
+                    entryPoints.put(ep.addr, ep.name);
+            }
+        } catch (Exception ex) {
+            System.err.println("ERROR: initEntryPoints(): " + ex.getMessage());
         }
     }
 }
