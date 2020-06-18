@@ -1,6 +1,5 @@
 package org.clyze.scanner;
 
-import java.io.File;
 import java.util.*;
 import java.util.regex.*;
 
@@ -82,21 +81,7 @@ public class BinutilsAnalysis extends BinaryAnalysis {
                         else if (s.endsWith("-big"))
                             littleEndian = false;
             }
-
-            if (littleEndian == null) {
-                final boolean DEFAULT_ENDIANNESS = true;
-                System.err.println("WARNING: could not determine endianness, assuming littleEndian=" + DEFAULT_ENDIANNESS);
-                littleEndian = DEFAULT_ENDIANNESS;
-            }
-            if (wordSize == null) {
-                final int DEFAULT_WORDSIZE = 4;
-                System.err.println("WARNING: could not determine word size, assuming wordSize=" + DEFAULT_WORDSIZE);
-                wordSize = DEFAULT_WORDSIZE;
-            }
-
-            this.info = new HashMap<>();
-            info.put("endian", littleEndian ? "little" : "big");
-            info.put("wordSize", wordSize + "");
+            this.info = createNativeCodeInfo(wordSize, littleEndian);
         }
         return info;
     }
@@ -139,18 +124,7 @@ public class BinutilsAnalysis extends BinaryAnalysis {
         } catch (Exception ex) {
             System.err.println("Error: " + ex.getMessage());
             // For systems where 'file' is not available, use a heuristic.
-            if (lib.contains(File.separator + "armeabi-v7a" + File.separator))
-                libArch = Arch.ARMEABI;
-            else if (lib.contains(File.separator + "arm64-v8a" + File.separator))
-                libArch = Arch.AARCH64;
-            else if (lib.contains(File.separator + "x86" + File.separator))
-                libArch = Arch.X86;
-            else if (lib.contains(File.separator + "x86_64" + File.separator))
-                libArch = Arch.X86_64;
-            else {
-                libArch = Arch.DEFAULT_ARCH;
-                System.out.println("Could not determine architecture of " + lib + ", using default: " + libArch);
-            }
+            libArch = Arch.autodetectFromPath(lib);
         }
         return libArch;
     }

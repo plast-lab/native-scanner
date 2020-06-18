@@ -281,31 +281,40 @@ public class NativeScanner {
      * Factory method that creates a binary analysis for a target native code library.
      *
      * @param dbc                  the database consumer to use
-     * @param radareMode           if true, a Radare analysis will be returned, if false, a binutils analysis
+     * @param analysisType         the type of the engine to use (binutils/Radare2/built-in)
      * @param lib                  the path to the native code library
      * @param onlyPreciseStrings   only record strings with known position in the code
      * @param truncateAddresses    truncate addresses to 32-bit
      * @param demangle             do name demanging (on binutils analysis)
      * @return a binary analysis configured for the target native code library
      */
-    public static BinaryAnalysis create(NativeDatabaseConsumer dbc, boolean radareMode,
+    public static BinaryAnalysis create(NativeDatabaseConsumer dbc, BinaryAnalysis.AnalysisType analysisType,
                                         String lib, boolean onlyPreciseStrings,
                                         boolean truncateAddresses, boolean demangle) {
-        return radareMode ?
-            new RadareAnalysis(dbc, lib, onlyPreciseStrings, truncateAddresses)  :
-            new BinutilsAnalysis(dbc, lib, onlyPreciseStrings, truncateAddresses, demangle);
+        if (analysisType == BinaryAnalysis.AnalysisType.RADARE)
+            return new RadareAnalysis(dbc, lib, onlyPreciseStrings, truncateAddresses);
+        else if (analysisType == BinaryAnalysis.AnalysisType.BINUTILS)
+            return new BinutilsAnalysis(dbc, lib, onlyPreciseStrings, truncateAddresses, demangle);
+        else {
+            if (debug) {
+                System.out.println("Ignoring parameter: onlyPreciseStrings = " + onlyPreciseStrings);
+                System.out.println("Ignoring parameter: truncateAddresses = " + truncateAddresses);
+                System.out.println("Ignoring parameter: demangle = " + demangle);
+            }
+            return new BuiltinAnalysis(dbc, lib);
+        }
     }
 
     /**
      * Scan the native code in a compressed archive (ZIP-based formats: JAR/AAR/APK).
      * @param dbc                  the database consumer to use
-     * @param radareMode           if true, a Radare analysis will be returned, if false, a binutils analysis
+     * @param analysisType         the type of the engine to use (binutils/Radare2/built-in)
      * @param onlyPreciseStrings   only record strings with known position in the code
      * @param truncateAddresses    truncate addresses to 32-bit
      * @param demangle             do name demanging (on binutils analysis)
      * @param f                    the ZIP file
      */
-    public void scanArchive(NativeDatabaseConsumer dbc, boolean radareMode,
+    public void scanArchive(NativeDatabaseConsumer dbc, BinaryAnalysis.AnalysisType analysisType,
                             boolean onlyPreciseStrings, boolean truncateAddresses,
                             boolean demangle, File f) {
         try (ZipInputStream zin = new ZipInputStream(new FileInputStream(f));
@@ -314,7 +323,7 @@ public class NativeScanner {
             while ((entry = zin.getNextEntry()) != null) {
                 /* Skip directories */
                 if (!entry.isDirectory())
-                    scanArchiveEntry(dbc, radareMode, onlyPreciseStrings,
+                    scanArchiveEntry(dbc, analysisType, onlyPreciseStrings,
                             demangle, truncateAddresses, zipFile, entry,
                             entry.getName().toLowerCase());
             }
@@ -327,7 +336,7 @@ public class NativeScanner {
      * Process an entry inside a compressed archive (ZIP-based formats: JAR/AAR/APK).
      *
      * @param dbc                  the database consumer to use
-     * @param radareMode           if true, a Radare analysis will be returned, if false, a binutils analysis
+     * @param analysisType         the type of the engine to use (binutils/Radare2/built-in)
      * @param onlyPreciseStrings   only record strings with known position in the code
      * @param truncateAddresses    truncate addresses to 32-bit
      * @param demangle             do name demanging (on binutils analysis)
@@ -336,7 +345,7 @@ public class NativeScanner {
      * @param entryName            the name of the ZIP entry
      * @throws IOException on archive scan I/O error
      */
-    public void scanArchiveEntry(NativeDatabaseConsumer dbc, boolean radareMode,
+    public void scanArchiveEntry(NativeDatabaseConsumer dbc, BinaryAnalysis.AnalysisType analysisType,
                                  boolean onlyPreciseStrings, boolean truncateAddresses,
                                  boolean demangle, ZipFile file, ZipEntry entry,
                                  String entryName) throws IOException {
@@ -354,9 +363,9 @@ public class NativeScanner {
                 libPath = NativeScanner.getXZSLib(libPath);
             else if (isLibsZSTD)
                 libPath = NativeScanner.getZSTDLib(libPath);
-            BinaryAnalysis analysis = NativeScanner.create(dbc, radareMode, libPath, onlyPreciseStrings, truncateAddresses, demangle);
+            BinaryAnalysis analysis = NativeScanner.create(dbc, analysisType, libPath, onlyPreciseStrings, truncateAddresses, demangle);
             // Check that the current mode supports .dll inputs.
-            if (isDLL && !radareMode)
+            if (isDLL && analysisType != BinaryAnalysis.AnalysisType.RADARE)
                 System.err.println("WARNING: Radare mode should be activated to scan library " + entryName);
 
             scanBinaryCode(analysis);

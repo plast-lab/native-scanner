@@ -16,6 +16,7 @@ public class Main {
     private static final String OPT_ONLY_PRECISE_STRINGS = "--only-precise-strings";
     private static final String OPT_BINUTILS = "--binutils";
     private static final String OPT_RADARE = "--radare";
+    private static final String OPT_BUILTIN = "--built-in";
     private static final String OPT_METHOD_STRINGS = "--method-strings=";
     private static final String OPT_TRUNCATE_ADDRESSES = "--truncate-addresses";
     private static final String OPT_DEMANGLE_ENTRY_POINTS = "--demangle-entry-points";
@@ -28,8 +29,7 @@ public class Main {
         }
         
         boolean onlyPreciseStrings = false;
-        boolean binutilsMode = false;
-        boolean radareMode = false;
+        BinaryAnalysis.AnalysisType analysisType = BinaryAnalysis.AnalysisType.BINUTILS;
         boolean truncateAddresses = false;
         boolean demangle = false;
         boolean computeXRefs = true;
@@ -43,9 +43,11 @@ public class Main {
             } else if (OPT_ONLY_PRECISE_STRINGS.equals(arg))
                 onlyPreciseStrings = true;
             else if (OPT_RADARE.equals(arg))
-                radareMode = true;
+                analysisType = BinaryAnalysis.AnalysisType.RADARE;
             else if (OPT_BINUTILS.equals(arg))
-                binutilsMode = true;
+                analysisType = BinaryAnalysis.AnalysisType.BINUTILS;
+            else if (OPT_BUILTIN.equals(arg))
+                analysisType = BinaryAnalysis.AnalysisType.BUILTIN;
             else if (OPT_TRUNCATE_ADDRESSES.equals(arg))
                 truncateAddresses = true;
             else if (OPT_DEMANGLE_ENTRY_POINTS.equals(arg))
@@ -76,20 +78,15 @@ public class Main {
             }
         }
 
-        if (binutilsMode && radareMode) {
-            System.err.println("ERROR: only one of options " + OPT_BINUTILS + " and " + OPT_RADARE + " should be used.");
-            return;
-        }
-
         // A simple consumer to show the results on screen.
         for (File f : inputs) {
             BasicDatabaseConsumer dbc = new BasicDatabaseConsumer();
             NativeScanner scanner = new NativeScanner(computeXRefs, methodStrings);
             String lib = f.getAbsolutePath();
             if (lib.endsWith(".apk") || lib.endsWith(".jar") || lib.endsWith(".aar")) {
-                scanner.scanArchive(dbc, radareMode, onlyPreciseStrings, truncateAddresses, demangle, f);
+                scanner.scanArchive(dbc, analysisType, onlyPreciseStrings, truncateAddresses, demangle, f);
             } else {
-                BinaryAnalysis analysis = NativeScanner.create(dbc, radareMode, lib, onlyPreciseStrings, truncateAddresses, demangle);
+                BinaryAnalysis analysis = NativeScanner.create(dbc, analysisType, lib, onlyPreciseStrings, truncateAddresses, demangle);
                 scanner.scanBinaryCode(analysis);
             }
             dbc.getProduct().forEach(System.out::println);

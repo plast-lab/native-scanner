@@ -8,6 +8,10 @@ import java.util.*;
  */
 public abstract class BinaryAnalysis {
 
+    public enum AnalysisType {
+        BINUTILS, RADARE, BUILTIN
+    }
+
     /** The name of the relation containing method name strings. */
     public static final String NATIVE_NAME_CANDIDATE = "NATIVE_NAME_CANDIDATE";
     /** The name of the relation containing method types (JVM-style method descriptors). */
@@ -221,5 +225,29 @@ public abstract class BinaryAnalysis {
         if (s.startsWith("0x"))
             s = s.substring(2);
         return Integer.parseInt(s.trim(), 16);
+    }
+
+    /**
+     * Create an information table about this native code.
+     * @param wordSize      the word size of the architecture
+     * @param littleEndian  if the architecture is little-endian
+     * @return              a dictionary containing the information
+     */
+    static protected Map<String, String> createNativeCodeInfo(Integer wordSize, Boolean littleEndian) {
+        if (littleEndian == null) {
+            final boolean DEFAULT_ENDIANNESS = true;
+            System.err.println("WARNING: could not determine endianness, assuming littleEndian=" + DEFAULT_ENDIANNESS);
+            littleEndian = DEFAULT_ENDIANNESS;
+        }
+        if (wordSize == null) {
+            final int DEFAULT_WORDSIZE = 4;
+            System.err.println("WARNING: could not determine word size, assuming wordSize=" + DEFAULT_WORDSIZE);
+            wordSize = DEFAULT_WORDSIZE;
+        }
+
+        Map<String, String> info = new HashMap<>();
+        info.put("endian", littleEndian ? "little" : "big");
+        info.put("wordSize", wordSize + "");
+        return info;
     }
 }
