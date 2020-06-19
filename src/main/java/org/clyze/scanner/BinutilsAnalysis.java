@@ -131,7 +131,7 @@ public class BinutilsAnalysis extends BinaryAnalysis {
 
     @Override
     public Map<String, Set<XRef>> findXRefs(Map<Long, String> binStrings) {
-        System.out.println("Using built-in scanner to find strings in functions...");
+        System.out.println("Using binutils-based scanner to find strings in functions...");
         if (libArch.equals(Arch.X86))
             return findXRefsInX86(binStrings, lib);
         else if (libArch.equals(Arch.X86_64))
