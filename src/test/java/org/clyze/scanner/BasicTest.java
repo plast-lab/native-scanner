@@ -42,11 +42,10 @@ public class BasicTest {
         // NativeDatabaseConsumer dbc = new BasicDatabaseConsumer();
 
         String libPath = getTestNativeLibrary();
-        boolean radareMode = false;
         boolean onlyPreciseStrings = false;
         boolean truncateAddresses = false;
         boolean demangle = false;
-        BinaryAnalysis analysis = NativeScanner.create(dbc, radareMode, libPath, onlyPreciseStrings, truncateAddresses, demangle);
+        BinaryAnalysis analysis = NativeScanner.create(dbc, BinaryAnalysis.AnalysisType.BINUTILS, libPath, onlyPreciseStrings, truncateAddresses, demangle);
         (new NativeScanner(true, null)).scanBinaryCode(analysis);
 
         assertTrue(p.methodNameFound);
