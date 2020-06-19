@@ -1,14 +1,17 @@
 This repository hosts the native scanner, a library that searches for
-strings in binary libraries, to inform static analyses.
+strings in binary libraries, to inform static analyses. Read more about
+this library in paper ["Identifying Java Calls in Native Code via Binary Scanning"](https://gfour.github.io/files/native-scanner-issta2020.pdf).
 
 This library has the following modes:
 
-* [binutils-based](https://www.gnu.org/software/binutils/) analysis: this assumes the existence of utilities
-  such as `nm`, `objdump`, and `gdb`.
+* Radare2-based analysis: this uses the [Radare2](https://rada.re/)
+  framework for portability.
 
-* Radare2-based analysis: this assumes the existence of a
-  [Radare2](https://rada.re/) installation with
-  [r2pipe](https://github.com/radareorg/radare2-r2pipe).
+* [binutils-based](https://www.gnu.org/software/binutils/) analysis: this
+  assumes the existence of utilities such as `nm`, `objdump`, and `gdb`.
+
+* Built-in mode: this uses no external tools but only supports a subset
+  of the functionality.
 
 ## Setup ##
 
@@ -34,7 +37,7 @@ repositories {
 }
 
 dependencies {
-  implementation 'org.clyze:native-scanner:0.5.2'
+  implementation 'org.clyze:native-scanner:0.5.7'
 }
 ```
 
@@ -55,6 +58,20 @@ point to the correct toolchains (to generate such toolchains, consult
 the [Android NDK documentation](https://developer.android.com/ndk/guides/standalone_toolchain)
 or equivalent binary SDK distribution).
 
+### Radare2 mode ###
+
+This mode uses the [Radare2](https://rada.re/) reverse engineering framework for portability.
+
+Setup:
+
+1. Install Radare2 so that it is available in your PATH.
+
+2. Install Python and [r2pipe](https://github.com/radareorg/radare2-r2pipe):
+
+```
+pip install r2pipe --user
+```
+
 ## Use ##
 
 For the standalone application, pass `--help` to see the available
@@ -63,5 +80,5 @@ options.
 For the library, instantiate a NativeScanner object and a BinaryAnalysis
 object, and use method `NativeScanner.scanBinaryCode()` to scan a native
 library. To consume the results, implement interface `NativeDatabaseConsumer`.
-See the standalone entry point org.clyze.scanner.Main.main() for an actual
+See the standalone entry point `org.clyze.scanner.Main.main()` for an actual
 piece of code using this library.
