@@ -131,7 +131,7 @@ public abstract class BinaryAnalysis {
     /**
      * Returns a list of pointer values that may point to global data.
      */
-    private Set<Long> getGlobalDataPointers() throws IOException {
+    protected Set<Long> getGlobalDataPointers() throws IOException {
         Section data = getSection(".data");
         return data == null ? null : data.analyzeWords(getWordSize(), isLittleEndian());
     }

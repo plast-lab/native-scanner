@@ -11,7 +11,7 @@ This library has the following modes:
   assumes the existence of utilities such as `nm`, `objdump`, and `gdb`.
 
 * Built-in mode: this uses no external tools but only supports a subset
-  of the functionality.
+  of the functionality for ELF files.
 
 ## Setup ##
 
