@@ -10,42 +10,42 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class BasicTest {
 
-    private static String getTestNativeLibrary() {
-        final String LIB_RESOURCE = "/libjackpal-androidterm5.so";
+    private static String getTestELFLibrary() {
+        return getTestNativeLibrary("/libjackpal-androidterm5.so", ".so");
+    }
+
+    private static String getTestDLL() {
+        return getTestNativeLibrary("/localfile_1_0_0.dll", ".dll");
+    }
+
+    private static String getTestNativeLibrary(String libResource, String extension) {
         try {
-            Path tmpPath = Files.createTempFile("lib", ".so");
-            InputStream resourceAsStream = BasicTest.class.getResourceAsStream(LIB_RESOURCE);
+            Path tmpPath = Files.createTempFile("lib", extension);
+            InputStream resourceAsStream = BasicTest.class.getResourceAsStream(libResource);
             Files.copy(resourceAsStream, tmpPath, StandardCopyOption.REPLACE_EXISTING);
             return tmpPath.toString();
         } catch (IOException ex) {
             ex.printStackTrace();
-            throw new RuntimeException("Error: could not extract " + LIB_RESOURCE);
+            throw new RuntimeException("Error: could not extract " + libResource);
         }
     }
 
-    @SuppressWarnings("ConstantConditions")
     @Test
-    public void libraryStringsMatch() {
-        CheckPair p = new CheckPair();
-        NativeDatabaseConsumer dbc = (predicateFile, arg, args) -> {
-            // System.out.println(predicateFile + "('" + args[1] + "')");
-            if (predicateFile.equals(BinaryAnalysis.NATIVE_METHODTYPE_CANDIDATE) &&
-                args[1].equals("(IIIII)V")) {
-                System.out.println("Found: " + args[1]);
-                p.methodTypeFound = true;
-            } else if (predicateFile.equals(BinaryAnalysis.NATIVE_NAME_CANDIDATE) &&
-                       args[1].equals("setPtyWindowSizeInternal")) {
-                System.out.println("Found: " + args[1]);
-                p.methodNameFound = true;
-            }
-        };
-        // NativeDatabaseConsumer dbc = new BasicDatabaseConsumer();
+    public void libraryStringsMatch_ELF() {
+        libraryStringsMatch(new CheckPairConsumer("setPtyWindowSizeInternal", "(IIIII)V"), getTestELFLibrary());
+    }
 
-        String libPath = getTestNativeLibrary();
+    @Test
+    public void libraryStringsMatch_DLL() {
+        libraryStringsMatch(new CheckPairConsumer("setName", "(Ljava/lang/String;)V"), getTestDLL());
+    }
+
+    public void libraryStringsMatch(CheckPairConsumer p, String libPath) {
+        System.out.println("Testing " + libPath);
         boolean onlyPreciseStrings = false;
         boolean truncateAddresses = false;
         boolean demangle = false;
-        BinaryAnalysis analysis = NativeScanner.create(dbc, BinaryAnalysis.AnalysisType.BINUTILS, libPath, onlyPreciseStrings, truncateAddresses, demangle);
+        BinaryAnalysis analysis = NativeScanner.create(p, BinaryAnalysis.AnalysisType.BINUTILS, libPath, onlyPreciseStrings, truncateAddresses, demangle);
         (new NativeScanner(true, null)).scanBinaryCode(analysis);
 
         assertTrue(p.methodNameFound);
