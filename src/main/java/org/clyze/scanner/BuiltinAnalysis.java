@@ -109,7 +109,12 @@ public class BuiltinAnalysis extends BinaryAnalysis {
         if (sectionAddr != null) {
             // Use next section address to calculate section size (or end of file if last section).
             SortedMap<Long, String> nextAddrs = codeInfo.sectionAddresses.tailMap(sectionAddr + 1);
-            long sectionBoundary = !nextAddrs.isEmpty() ? nextAddrs.firstKey() : codeInfo.libSize;
+            long sectionBoundary = codeInfo.libSize;
+            if (!nextAddrs.isEmpty()) {
+                long nextSectionAddr = nextAddrs.firstKey();
+                if (nextSectionAddr < codeInfo.libSize)
+                    sectionBoundary = nextSectionAddr - 1;
+            }
             System.out.println("sectionBoundary=" + sectionBoundary);
             return new Section(sectionName, lib, (int) (sectionBoundary - sectionAddr), 0, sectionAddr);
         } else

@@ -30,10 +30,10 @@ public class BasicTest {
         }
     }
 
-//    @Test
-//    public void libraryStringsMatch_ELF_Builtin() {
-//        libraryStringsMatch_ELF(BinaryAnalysis.AnalysisType.BUILTIN);
-//    }
+    @Test
+    public void libraryStringsMatch_ELF_Builtin() {
+        libraryStringsMatch_ELF(BinaryAnalysis.AnalysisType.BUILTIN);
+    }
 
     @Test
     public void libraryStringsMatch_ELF_Binutils() {

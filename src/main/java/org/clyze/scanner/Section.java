@@ -40,7 +40,7 @@ public class Section {
             System.out.println("Section fully read: " + name);
             return data;
         } catch (IOException ex) {
-            System.err.println("Failed to read section " + name + ": " + ex.getMessage());
+            System.err.println("Failed to read section " + name + " (offset=" + offset + ", size=" + size + "): " + ex.getMessage());
             ex.printStackTrace();
             return new byte[0];
         }
