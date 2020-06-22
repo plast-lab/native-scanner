@@ -219,34 +219,32 @@ public class RadareAnalysis extends BinaryAnalysis {
     }
 
     @Override
-    public synchronized Map<String, String> getNativeCodeInfo() {
-        if (info == null) {
-            try {
-                File outFile = File.createTempFile("info-out", ".txt");
-                runRadare("info", lib, outFile.getCanonicalPath());
-                this.info = new HashMap<>();
-                Consumer<ArrayList<String>> proc = (l -> {
-                        String key = l.get(0);
-                        String value = l.get(1);
-                        this.info.put(key.trim(), value.trim());
-                    });
-                processMultiColumnFile(outFile, INFO_MARKER, 2, proc);
-            } catch (IOException ex) {
-                ex.printStackTrace();
-                throw new RuntimeException("Could not read native code properties.");
-            }
+    protected synchronized CodeInfo getNativeCodeInfo() {
+        Map<String, String> metadata = new HashMap<>();
+        try {
+            File outFile = File.createTempFile("info-out", ".txt");
+            runRadare("info", lib, outFile.getCanonicalPath());
+            Consumer<ArrayList<String>> proc = (l -> {
+                    String key = l.get(0);
+                    String value = l.get(1);
+                    metadata.put(key.trim(), value.trim());
+                });
+            processMultiColumnFile(outFile, INFO_MARKER, 2, proc);
+        } catch (IOException ex) {
+            ex.printStackTrace();
+            throw new RuntimeException("Could not read native code properties.");
         }
-        return this.info;
+        return new CodeInfo(metadata, detectArch(metadata), null, null);
     }
 
     @Override
     public boolean isLittleEndian() {
-        return getNativeCodeInfo().get("endian").equals("little");
+        return codeInfo.metadata.get("endian").equals("little");
     }
 
     @Override
     public int getWordSize() {
-        Map<String, String> info = getNativeCodeInfo();
+        Map<String, String> info = codeInfo.metadata;
         String c = info.get("class");
         String bits = info.get("bits");
         if (c.equals("ELF32"))
@@ -262,37 +260,31 @@ public class RadareAnalysis extends BinaryAnalysis {
         }
     }
 
-    @Override
-    public Arch autodetectArch() {
-        Map<String, String> info = getNativeCodeInfo();
-
+    private Arch detectArch(Map<String, String> info) {
         String arch = info.get("arch");
         String bits = info.get("bits");
 
-        if (arch == null || bits == null)
-            setDefaultArch();
-        else if (arch.equals("x86") && bits.equals("32"))
-            this.libArch = Arch.X86;
-        else if (arch.equals("x86") && bits.equals("64"))
-            this.libArch = Arch.X86_64;
-        else if (arch.equals("arm") && bits.equals("64"))
-            this.libArch = Arch.AARCH64;
-        else if (arch.equals("arm") && (bits.equals("16") || bits.equals("32")))
-            this.libArch = Arch.ARMEABI;
-        else if (arch.equals("mips"))
-            this.libArch = Arch.MIPS;
+        Arch libArch = null;
+        if (arch != null && bits != null) {
+            if (arch.equals("x86") && bits.equals("32"))
+                libArch = Arch.X86;
+            else if (arch.equals("x86") && bits.equals("64"))
+                libArch = Arch.X86_64;
+            else if (arch.equals("arm") && bits.equals("64"))
+                libArch = Arch.AARCH64;
+            else if (arch.equals("arm") && (bits.equals("16") || bits.equals("32")))
+                libArch = Arch.ARMEABI;
+            else if (arch.equals("mips"))
+                libArch = Arch.MIPS;
+        }
 
-        if (this.libArch == null)
-            setDefaultArch();
-        else
-            System.out.println("Detected architecture of " + lib + " is " + this.libArch);
+        if (libArch == null) {
+            System.out.println("Could not determine architecture of " + lib + ", using default: " + Arch.DEFAULT_ARCH.name());
+            return Arch.DEFAULT_ARCH;
+        }
 
-        return this.libArch;
-    }
-
-    private void setDefaultArch() {
-        this.libArch = Arch.DEFAULT_ARCH;
-        System.out.println("Could not determine architecture of " + lib + ", using default: " + this.libArch);
+        System.out.println("Detected architecture of " + lib + " is " + libArch.name());
+        return libArch;
     }
 
     private void processMultiColumnFile(File f, String prefix, int numColumns,

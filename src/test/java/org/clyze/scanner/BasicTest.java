@@ -30,22 +30,50 @@ public class BasicTest {
         }
     }
 
+//    @Test
+//    public void libraryStringsMatch_ELF_Builtin() {
+//        libraryStringsMatch_ELF(BinaryAnalysis.AnalysisType.BUILTIN);
+//    }
+
     @Test
-    public void libraryStringsMatch_ELF() {
-        libraryStringsMatch(new CheckPairConsumer("setPtyWindowSizeInternal", "(IIIII)V"), getTestELFLibrary());
+    public void libraryStringsMatch_ELF_Binutils() {
+        libraryStringsMatch_ELF(BinaryAnalysis.AnalysisType.BINUTILS);
     }
 
     @Test
-    public void libraryStringsMatch_DLL() {
-        libraryStringsMatch(new CheckPairConsumer("setName", "(Ljava/lang/String;)V"), getTestDLL());
+    public void libraryStringsMatch_ELF_Radare() {
+        libraryStringsMatch_ELF(BinaryAnalysis.AnalysisType.RADARE);
     }
 
-    public void libraryStringsMatch(CheckPairConsumer p, String libPath) {
-        System.out.println("Testing " + libPath);
+    public void libraryStringsMatch_ELF(BinaryAnalysis.AnalysisType aType) {
+        libraryStringsMatch(aType, new CheckPairConsumer("setPtyWindowSizeInternal", "(IIIII)V"), getTestELFLibrary());
+    }
+
+    @Test
+    public void libraryStringsMatch_DLL_Builtin() {
+        libraryStringsMatch_DLL(BinaryAnalysis.AnalysisType.BUILTIN);
+    }
+
+    @Test
+    public void libraryStringsMatch_DLL_Binutils() {
+        libraryStringsMatch_DLL(BinaryAnalysis.AnalysisType.BINUTILS);
+    }
+
+    @Test
+    public void libraryStringsMatch_DLL_Radare() {
+        libraryStringsMatch_DLL(BinaryAnalysis.AnalysisType.RADARE);
+    }
+
+    public void libraryStringsMatch_DLL(BinaryAnalysis.AnalysisType aType) {
+        libraryStringsMatch(aType, new CheckPairConsumer("setName", "(Ljava/lang/String;)V"), getTestDLL());
+    }
+
+    public void libraryStringsMatch(BinaryAnalysis.AnalysisType analysisType, CheckPairConsumer p, String libPath) {
+        System.out.println("Testing " + libPath + " [mode: " + analysisType.name() + "]");
         boolean onlyPreciseStrings = false;
         boolean truncateAddresses = false;
         boolean demangle = false;
-        BinaryAnalysis analysis = NativeScanner.create(p, BinaryAnalysis.AnalysisType.BINUTILS, libPath, onlyPreciseStrings, truncateAddresses, demangle);
+        BinaryAnalysis analysis = NativeScanner.create(p, analysisType, libPath, onlyPreciseStrings, truncateAddresses, demangle);
         (new NativeScanner(true, null)).scanBinaryCode(analysis);
 
         assertTrue(p.methodNameFound);

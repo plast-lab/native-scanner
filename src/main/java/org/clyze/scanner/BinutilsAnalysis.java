@@ -35,13 +35,13 @@ public class BinutilsAnalysis extends BinaryAnalysis {
 
         this.nmCmd = "nm";
         this.objdumpCmd = "objdump";
-        if (libArch == Arch.ARMEABI) {
+        if (codeInfo.arch == Arch.ARMEABI) {
             if (toolchainARMEABI != null) {
                 this.nmCmd = toolchainARMEABI + "/bin/nm";
                 this.objdumpCmd = toolchainARMEABI + "/bin/objdump";
             } else
                 System.err.println("No ARMEABI toolchain found, set " + envVarARMEABI + ". Using system nm/objdump.");
-        } else if (libArch == Arch.AARCH64) {
+        } else if (codeInfo.arch == Arch.AARCH64) {
             if (toolchainAARCH64 != null) {
                 this.nmCmd = toolchainAARCH64 + "/bin/nm";
                 this.objdumpCmd = toolchainAARCH64 + "/bin/objdump";
@@ -51,48 +51,46 @@ public class BinutilsAnalysis extends BinaryAnalysis {
 
         if (debug) {
             System.out.println("== Native scanner paths ==");
-            System.out.println("arch = " + libArch);
+            System.out.println("arch = " + codeInfo.arch.name());
             System.out.println("nmCmd = " + nmCmd);
             System.out.println("objdumpCmd = " + objdumpCmd);
         }
     }
 
     @Override
-    public synchronized Map<String, String> getNativeCodeInfo() {
-        if (info == null) {
-            Boolean littleEndian = null;
-            Integer wordSize = null;
+    protected synchronized CodeInfo getNativeCodeInfo() {
+        Boolean littleEndian = null;
+        Integer wordSize = null;
 
-            ProcessBuilder gdbBuilder = new ProcessBuilder("objdump", "-d", lib);
-            final String FILE_FORMAT = "file format";
+        ProcessBuilder gdbBuilder = new ProcessBuilder("objdump", "-d", lib);
+        final String FILE_FORMAT = "file format";
 
-            for (String line : NativeScanner.runCommand(gdbBuilder)) {
-                int idx = line.indexOf(FILE_FORMAT);
-                if (idx != -1)
-                    for (String s : line.substring(idx + FILE_FORMAT.length()).split("\\s+"))
-                        if (s.endsWith("pei-i386") || s.startsWith("elf32-")) {
-                            littleEndian = true;
-                            wordSize = 4;
-                        } else if (s.endsWith("pei-x86-64") || s.endsWith("elf64-x86-64") || s.contains("Mach-O 64-bit x86-64")) {
-                            littleEndian = true;
-                            wordSize = 8;
-                        } else if (s.endsWith("-little") || s.endsWith("-i386") || s.endsWith("-x86-64"))
-                            littleEndian = true;
-                        else if (s.endsWith("-big"))
-                            littleEndian = false;
-            }
-            this.info = createNativeCodeInfo(wordSize, littleEndian);
+        for (String line : NativeScanner.runCommand(gdbBuilder)) {
+            int idx = line.indexOf(FILE_FORMAT);
+            if (idx != -1)
+                for (String s : line.substring(idx + FILE_FORMAT.length()).split("\\s+"))
+                    if (s.endsWith("pei-i386") || s.startsWith("elf32-")) {
+                        littleEndian = true;
+                        wordSize = 4;
+                    } else if (s.endsWith("pei-x86-64") || s.endsWith("elf64-x86-64") || s.contains("Mach-O 64-bit x86-64")) {
+                        littleEndian = true;
+                        wordSize = 8;
+                    } else if (s.endsWith("-little") || s.endsWith("-i386") || s.endsWith("-x86-64"))
+                        littleEndian = true;
+                    else if (s.endsWith("-big"))
+                        littleEndian = false;
         }
-        return info;
+        Map<String, String> metadata = createNativeCodeInfo(wordSize, littleEndian);
+        return new CodeInfo(metadata, detectArch(), null, null);
     }
 
     @Override
     public int getWordSize() {
-        return Integer.parseInt(getNativeCodeInfo().get("wordSize"));
+        return Integer.parseInt(codeInfo.metadata.get("wordSize"));
     }
 
-    @Override
-    public Arch autodetectArch() {
+    private Arch detectArch() {
+        Arch libArch = null;
         try {
             String util = "file";
             ProcessBuilder pb = new ProcessBuilder(util, lib);
@@ -118,13 +116,12 @@ public class BinutilsAnalysis extends BinaryAnalysis {
             if (libArch != null)
                 System.out.println("Detected architecture of " + lib + " is " + libArch);
             else {
-                libArch = Arch.DEFAULT_ARCH;
                 throw new RuntimeException("Could not determine architecture of " + lib + " using '" + util +"'.");
             }
         } catch (Exception ex) {
             System.err.println("Error: " + ex.getMessage());
             // For systems where 'file' is not available, use a heuristic.
-            libArch = Arch.autodetectFromPath(lib);
+            libArch = Arch.autodetectFromPathOrDefault(lib);
         }
         return libArch;
     }
@@ -132,17 +129,19 @@ public class BinutilsAnalysis extends BinaryAnalysis {
     @Override
     public Map<String, Set<XRef>> findXRefs(Map<Long, String> binStrings) {
         System.out.println("Using binutils-based scanner to find strings in functions...");
-        if (libArch.equals(Arch.X86))
-            return findXRefsInX86(binStrings, lib);
-        else if (libArch.equals(Arch.X86_64))
-            return findXRefsInX86_64(binStrings, lib);
-        else if (libArch.equals(Arch.AARCH64))
-            return findXRefsInAARCH64(binStrings, lib);
-        else if (libArch.equals(Arch.ARMEABI)) {
-            // Fuse results for both armeabi/armeabi-v7a.
-            Map<String, Set<XRef>> eabi = findXRefsInARMEABI(binStrings, lib);
-            Map<String, Set<XRef>> eabi7 = findXRefsInARMEABIv7a(binStrings, lib);
-            return mergeMaps(eabi, eabi7);
+        Arch libArch = codeInfo.arch;
+        switch (libArch) {
+            case X86:
+                return findXRefsInX86(binStrings, lib);
+            case X86_64:
+                return findXRefsInX86_64(binStrings, lib);
+            case AARCH64:
+                return findXRefsInAARCH64(binStrings, lib);
+            case ARMEABI:
+                // Fuse results for both armeabi/armeabi-v7a.
+                Map<String, Set<XRef>> eabi = findXRefsInARMEABI(binStrings, lib);
+                Map<String, Set<XRef>> eabi7 = findXRefsInARMEABIv7a(binStrings, lib);
+                return mergeMaps(eabi, eabi7);
         }
         System.err.println("Architecture not supported: " + libArch);
         return new HashMap<>();

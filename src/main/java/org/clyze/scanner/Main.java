@@ -4,9 +4,6 @@ import java.io.*;
 import java.nio.file.Files;
 import java.util.*;
 import java.util.stream.Stream;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipFile;
-import java.util.zip.ZipInputStream;
 
 /**
  * The command-line entry point of the native scanner.

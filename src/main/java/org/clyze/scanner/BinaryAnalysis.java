@@ -40,11 +40,8 @@ public abstract class BinaryAnalysis {
      *  improves precision. */
     private final boolean onlyPreciseNativeStrings;
 
-    /** A dictionary of library properties. */
-    protected Map<String, String> info = null;
-
-    /** The native code architecture. */
-    protected Arch libArch;
+    /** The native code information. */
+    protected final CodeInfo codeInfo;
 
     BinaryAnalysis(NativeDatabaseConsumer dbc, String lib,
                    boolean onlyPreciseNativeStrings, boolean truncateTo32Bits) {
@@ -54,7 +51,7 @@ public abstract class BinaryAnalysis {
         this.truncateTo32Bits = truncateTo32Bits;
 
         // Auto-detect architecture.
-        this.libArch = autodetectArch();
+        this.codeInfo = getNativeCodeInfo();
     }
 
     /**
@@ -73,9 +70,9 @@ public abstract class BinaryAnalysis {
             Section data = getSection(".data");
             SortedMap<Long, String> peStrings = new TreeMap<>();
             if (rdata != null)
-                rdata.strings().forEach((k, v) -> peStrings.put(k, v));
+                rdata.strings().forEach(peStrings::put);
             if (data != null)
-                data.strings().forEach((k, v) -> peStrings.put(k, v));
+                data.strings().forEach(peStrings::put);
             if (!peStrings.isEmpty())
                 return peStrings;
         } catch (IOException ex) {
@@ -108,18 +105,11 @@ public abstract class BinaryAnalysis {
     abstract public void initEntryPoints();
 
     /**
-     * Autodetect the target hardware architecture.
+     * Compute information about the native code of the library.
      *
-     * @return the architecture
+     * @return the code information
      */
-    abstract public Arch autodetectArch();
-
-    /**
-     * A getter of the "info" field.
-     *
-     * @return the "info" mapping
-     */
-    abstract public Map<String, String> getNativeCodeInfo();
+    abstract protected CodeInfo getNativeCodeInfo();
 
     /**
      * Autodetect the endianness of the target architecture.
@@ -127,7 +117,7 @@ public abstract class BinaryAnalysis {
      * @return if true, architecture is little-endian, big-endian otherwise
      */
     public boolean isLittleEndian() {
-        return getNativeCodeInfo().get("endian").equals("little");
+        return codeInfo.arch.isLittleEndian();
     }
 
     /**
@@ -258,5 +248,21 @@ public abstract class BinaryAnalysis {
         info.put("endian", littleEndian ? "little" : "big");
         info.put("wordSize", wordSize + "");
         return info;
+    }
+}
+
+class CodeInfo {
+    /** A dictionary of library properties. */
+    public final Map<String, String> metadata;
+    public final Arch arch;
+    public final Integer libSize;
+    /** The section table. May be null for some analysis types. */
+    public final SortedMap<Long, String> sectionAddresses;
+
+    public CodeInfo(Map<String, String> metadata, Arch arch, Integer libSize, SortedMap<Long, String> sectionAddresses) {
+        this.metadata = metadata;
+        this.arch = arch;
+        this.libSize = libSize;
+        this.sectionAddresses = sectionAddresses;
     }
 }

@@ -15,6 +15,7 @@ public enum Arch {
     final boolean littleEndian;
     final int bits;
 
+    @SuppressWarnings("SameParameterValue")
     Arch(int bits, int wordSize, boolean littleEndian) {
         this.bits = bits;
         this.wordSize = wordSize;
@@ -32,9 +33,9 @@ public enum Arch {
     /**
      * A simple heuristic to autodetect architectures from path names.
      * @param lib     the name of the library path
-     * @return        the hardware architecture object
+     * @return        the hardware architecture object (or a default)
      */
-    public static Arch autodetectFromPath(String lib) {
+    public static Arch autodetectFromPathOrDefault(String lib) {
         if (lib.contains(File.separator + "armeabi-v7a" + File.separator))
             return Arch.ARMEABI;
         else if (lib.contains(File.separator + "arm64-v8a" + File.separator))

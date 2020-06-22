@@ -301,12 +301,7 @@ public class NativeScanner {
                 System.out.println("Ignoring parameter: truncateAddresses = " + truncateAddresses);
                 System.out.println("Ignoring parameter: demangle = " + demangle);
             }
-            try {
-                return new BuiltinAnalysis(dbc, lib);
-            } catch (IOException ex) {
-                ex.printStackTrace();
-                return null;
-            }
+            return new BuiltinAnalysis(dbc, lib);
         }
     }
 
@@ -387,6 +382,7 @@ public class NativeScanner {
      * @param entryName    the name of the entry
      * @return             the output file
      */
+    @SuppressWarnings("SameParameterValue")
     private static File extractZipEntryAsFile(String tmpDirName, ZipFile zipFile, ZipEntry entry, String entryName) throws IOException {
         File tmpDir = Files.createTempDirectory(tmpDirName).toFile();
         tmpDir.deleteOnExit();
