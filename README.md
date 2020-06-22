@@ -4,14 +4,20 @@ this library in paper ["Identifying Java Calls in Native Code via Binary Scannin
 
 This library has the following modes:
 
-* Radare2-based analysis: this uses the [Radare2](https://rada.re/)
-  framework for portability.
+* Radare2-based analysis: this mode uses the
+  [Radare2](https://rada.re/) framework.
 
-* [binutils-based](https://www.gnu.org/software/binutils/) analysis: this
-  assumes the existence of utilities such as `nm`, `objdump`, and `gdb`.
+* [Binutils-based](https://www.gnu.org/software/binutils/) analysis:
+  this mode assumes the existence of utilities such as `nm`,
+  `objdump`, and `gdb`.
 
-* Built-in mode: this uses no external tools but only supports a subset
-  of the functionality for ELF files.
+* Built-in mode: this mode uses no external tools but only supports a
+  subset of the functionality for ELF and DLL files (using the [JElf
+  parser](https://github.com/fornwall/jelf) and the [Kaitai Struct PE
+  format](https://formats.kaitai.io/microsoft_pe/index.html)
+  respectively). This mode should be used in applications where simple
+  string detection is enough or in platforms where binutils/Radare2
+  may not be available.
 
 ## Setup ##
 
