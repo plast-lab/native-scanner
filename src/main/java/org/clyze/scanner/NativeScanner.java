@@ -390,8 +390,9 @@ public class NativeScanner {
         // Do not use String.replaceAll(), since it chokes on Windows separators.
         StringBuilder sb = new StringBuilder();
         String sep = File.separator;
+        boolean singleCharSep = sep.length() == 1;
         for (char c : entryName.toCharArray())
-            if (sep.equals(c))
+            if (singleCharSep && sep.charAt(0) == c)
                 sb.append("_");
             else
                 sb.append(c);

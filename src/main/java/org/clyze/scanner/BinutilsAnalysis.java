@@ -94,7 +94,6 @@ public class BinutilsAnalysis extends BinaryAnalysis {
         try {
             String util = "file";
             ProcessBuilder pb = new ProcessBuilder(util, lib);
-            libArch = null;
             for (String line : NativeScanner.runCommand(pb)) {
                 if (line.contains("80386")) {
                     libArch = Arch.X86;
