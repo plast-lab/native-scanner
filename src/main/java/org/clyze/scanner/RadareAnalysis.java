@@ -269,7 +269,9 @@ public class RadareAnalysis extends BinaryAnalysis {
         String arch = info.get("arch");
         String bits = info.get("bits");
 
-        if (arch.equals("x86") && bits.equals("32"))
+        if (arch == null || bits == null)
+            setDefaultArch();
+        else if (arch.equals("x86") && bits.equals("32"))
             this.libArch = Arch.X86;
         else if (arch.equals("x86") && bits.equals("64"))
             this.libArch = Arch.X86_64;
@@ -280,13 +282,17 @@ public class RadareAnalysis extends BinaryAnalysis {
         else if (arch.equals("mips"))
             this.libArch = Arch.MIPS;
 
-        if (bits == null || this.libArch == null) {
-            this.libArch = Arch.DEFAULT_ARCH;
-            System.out.println("Could not determine architecture of " + lib + ", using default: " + this.libArch);
-        } else
+        if (this.libArch == null)
+            setDefaultArch();
+        else
             System.out.println("Detected architecture of " + lib + " is " + this.libArch);
 
         return this.libArch;
+    }
+
+    private void setDefaultArch() {
+        this.libArch = Arch.DEFAULT_ARCH;
+        System.out.println("Could not determine architecture of " + lib + ", using default: " + this.libArch);
     }
 
     private void processMultiColumnFile(File f, String prefix, int numColumns,
