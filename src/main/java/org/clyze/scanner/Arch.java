@@ -39,10 +39,13 @@ public enum Arch {
             return Arch.X86;
         else if (lib.contains(File.separator + "x86_64" + File.separator))
             return Arch.X86_64;
+        else if (lib.endsWith(".dll"))
+            return Arch.X86_64;
         else {
             Arch ret = Arch.DEFAULT_ARCH;
             System.out.println("Could not determine architecture of " + lib + ", using default: " + ret);
             return ret;
         }
     }
+
 }
