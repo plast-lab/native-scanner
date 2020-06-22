@@ -52,9 +52,11 @@ public class Section {
      * @return a collection of the strings found
      */
     SortedMap<Long, String> strings() {
-        if (this.foundStrings == null) {
-            byte[] data = readData();
+        if (this.foundStrings == null)
             this.foundStrings = new TreeMap<>();
+
+        try {
+            byte[] data = readData();
             StringBuilder foundString = new StringBuilder();
             long addr = vma;
             for (int i = 0; i < data.length; i++)
@@ -67,6 +69,8 @@ public class Section {
                     addr = vma + i + 1;
                 } else
                     foundString.append((char) data[i]);
+        } catch (Exception ex) {
+            ex.printStackTrace();
         }
         return this.foundStrings;
     }
