@@ -37,7 +37,7 @@ public class Section {
             raf.seek(offset);
             byte[] data = new byte[size];
             raf.readFully(data);
-            System.out.println("Section fully read: " + name);
+            System.out.println("Section fully read (offset=" + offset + ", size=" + size + "): " + name);
             return data;
         } catch (IOException ex) {
             System.err.println("Failed to read section " + name + " (offset=" + offset + ", size=" + size + "): " + ex.getMessage());
@@ -52,9 +52,10 @@ public class Section {
      * @return a collection of the strings found
      */
     SortedMap<Long, String> strings() {
-        if (this.foundStrings == null)
-            this.foundStrings = new TreeMap<>();
+        if (this.foundStrings != null)
+            return this.foundStrings;
 
+        this.foundStrings = new TreeMap<>();
         try {
             byte[] data = readData();
             StringBuilder foundString = new StringBuilder();

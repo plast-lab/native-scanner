@@ -1,6 +1,7 @@
 package org.clyze.scanner;
 
-import org.clyze.scanner.parser.Elf;
+import net.fornwall.jelf.ElfFile;
+import net.fornwall.jelf.ElfSectionHeader;
 import org.clyze.scanner.parser.MicrosoftPe;
 
 import java.io.File;
@@ -9,7 +10,7 @@ import java.nio.file.Files;
 import java.util.*;
 
 public class BuiltinAnalysis extends BinaryAnalysis {
-    final boolean verbose = true;
+    final boolean verbose = false;
 
     BuiltinAnalysis(NativeDatabaseConsumer dbc, String lib) {
         super(dbc, lib, false, true);
@@ -34,7 +35,6 @@ public class BuiltinAnalysis extends BinaryAnalysis {
      */
     @Override
     protected CodeInfo getNativeCodeInfo() {
-        System.out.println("-- getNativeCodeInfo()");
         Map<String, String> metadata = new HashMap<>();
         Arch libArch = null;
         int libSize = 0;
@@ -44,22 +44,29 @@ public class BuiltinAnalysis extends BinaryAnalysis {
             libSize = bytes.length;
             if (bytes[0] == 0x7f && bytes[1] == 'E' && bytes[2] == 'L' && bytes[3] == 'F') {
                 System.out.println("Using built-in ELF mode for library: " + lib);
-                Elf data = Elf.fromFile(lib);
-                if (data.bits() == Elf.Bits.B32)
+                ElfFile elfFile = ElfFile.from(bytes);
+                if (elfFile.objectSize == ElfFile.CLASS_32)
                     metadata.put("bits", "32");
-                else if (data.bits() == Elf.Bits.B64)
+                else if (elfFile.objectSize == ElfFile.CLASS_64)
                     metadata.put("bits", "64");
-                Elf.Machine m = data.header().machine();
-                switch (m) {
-                    case AARCH64: libArch = Arch.AARCH64; break;
-                    case ARM    : libArch = Arch.ARMEABI; break;
-                    case X86    : libArch = Arch.X86    ; break;
-                    case X86_64 : libArch = Arch.X86_64 ; break;
-                    default     : System.err.println("WARNING: Unknown ELF architecture " + m.name());
+                int elfArch = elfFile.arch;
+                switch (elfArch) {
+                    case ElfFile.ARCH_AARCH64: libArch = Arch.AARCH64; break;
+                    case ElfFile.ARCH_ARM    : libArch = Arch.ARMEABI; break;
+                    case ElfFile.ARCH_i386   : libArch = Arch.X86    ; break;
+                    case ElfFile.ARCH_X86_64 : libArch = Arch.X86_64 ; break;
+                    default: System.err.println("WARNING: Unknown ELF architecture " + elfArch);
                 }
                 sectionAddresses = new TreeMap<>();
-                for (Elf.EndianElf.SectionHeader sh : data.header().sectionHeaders())
-                    sectionAddresses.put(sh.addr(), sh.name());
+                for (short secIdx = 0; secIdx < elfFile.num_sh; secIdx++) {
+                    ElfSectionHeader sh = elfFile.getSection(secIdx).header;
+                    long secOffset = sh.section_offset;
+                    String secName = sh.getName();
+                    if (secName != null)
+                        sectionAddresses.put(secOffset, secName);
+                    else
+                        System.err.println("Ignoring nameless section at offset " + secOffset);
+                }
             } else if (bytes[0] == 'M' && bytes[1] == 'Z') {
                 System.out.println("Using built-in PE mode for library: " + lib);
                 MicrosoftPe data = MicrosoftPe.fromFile(lib);
@@ -87,6 +94,9 @@ public class BuiltinAnalysis extends BinaryAnalysis {
         }
         if (libArch == null)
             libArch = Arch.autodetectFromPathOrDefault(lib);
+
+        if (verbose)
+            sectionAddresses.forEach((k, v) -> System.out.println("#" + k + " -> section " + v));
 
         return new CodeInfo(metadata, libArch, libSize, sectionAddresses);
     }
