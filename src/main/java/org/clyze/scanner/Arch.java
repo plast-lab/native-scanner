@@ -4,17 +4,19 @@ import java.io.File;
 
 /** The supported architectures. */
 public enum Arch {
-    X86(4, true),
-    X86_64(8, true),
-    AARCH64(8, true),
-    ARMEABI(4, true),
-    MIPS(4, true);
+    X86(32, 4, true),
+    X86_64(64, 8, true),
+    AARCH64(64, 8, true),
+    ARMEABI(32, 4, true),
+    MIPS(32, 4, true);
 
     static final Arch DEFAULT_ARCH = AARCH64;
     final int wordSize;
     final boolean littleEndian;
+    final int bits;
 
-    Arch(int wordSize, boolean littleEndian) {
+    Arch(int bits, int wordSize, boolean littleEndian) {
+        this.bits = bits;
         this.wordSize = wordSize;
         this.littleEndian = littleEndian;
     }
@@ -24,6 +26,8 @@ public enum Arch {
     }
 
     public boolean isLittleEndian() { return littleEndian; }
+
+    public int getBits() { return bits; }
 
     /**
      * A simple heuristic to autodetect architectures from path names.

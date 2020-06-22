@@ -301,7 +301,12 @@ public class NativeScanner {
                 System.out.println("Ignoring parameter: truncateAddresses = " + truncateAddresses);
                 System.out.println("Ignoring parameter: demangle = " + demangle);
             }
-            return new BuiltinAnalysis(dbc, lib);
+            try {
+                return new BuiltinAnalysis(dbc, lib);
+            } catch (IOException ex) {
+                ex.printStackTrace();
+                return null;
+            }
         }
     }
 

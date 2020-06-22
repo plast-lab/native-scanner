@@ -64,11 +64,20 @@ public abstract class BinaryAnalysis {
      */
     public SortedMap<Long, String> findStrings() {
         try {
+            // ELF sections.
             Section rodata = getSection(".rodata");
-            if (rodata == null)
-                rodata = getSection(".rdata");
             if (rodata != null)
                 return rodata.strings();
+            // PE sections.
+            Section rdata = getSection(".rdata");
+            Section data = getSection(".data");
+            SortedMap<Long, String> peStrings = new TreeMap<>();
+            if (rdata != null)
+                rdata.strings().forEach((k, v) -> peStrings.put(k, v));
+            if (data != null)
+                data.strings().forEach((k, v) -> peStrings.put(k, v));
+            if (!peStrings.isEmpty())
+                return peStrings;
         } catch (IOException ex) {
             ex.printStackTrace();
             throw new RuntimeException("Could not read strings.");
