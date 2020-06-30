@@ -153,7 +153,10 @@ def processTable(r, out, cmd, IGNORE_FIRST, COLUMNS, proc):
             out.write(info + '\n')
         except:
             if debug:
-                print("IGNORED: " + stringLine)
+                try:
+                    print("IGNORED: " + stringLine)
+                except:
+                    print("IGNORED string (not shown due to error)")
 
 if __name__== "__main__":
 	main()
