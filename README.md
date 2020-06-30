@@ -43,7 +43,7 @@ repositories {
 }
 
 dependencies {
-  implementation 'org.clyze:native-scanner:0.5.7'
+  implementation 'org.clyze:native-scanner:0.6.1'
 }
 ```
 
