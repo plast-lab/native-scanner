@@ -50,20 +50,6 @@ dependencies {
 Note: this project also supports publishing to the local Maven
 repository via `./gradlew publishToMavenLocal`.
 
-### Binutils mode ###
-
-This mode uses command-line programs available in your POSIX system,
-such as `nm`, `objdump`, and `gdb`. This works for analyzing binaries
-on a system with the same ABI (for example, x86 binaries on a x86
-system).
-
-To analyze ARM binaries on a x86 system, appropriate toolchains should
-be used. Depending on the actual ARM target (32-bit or 64-bit), set
-environment variables `ARMEABI_TOOLCHAIN` and `AARCH64_TOOLCHAIN` to
-point to the correct toolchains (to generate such toolchains, consult
-the [Android NDK documentation](https://developer.android.com/ndk/guides/standalone_toolchain)
-or equivalent binary SDK distribution).
-
 ### Radare2 mode ###
 
 This mode uses the [Radare2](https://rada.re/) reverse engineering framework for portability.
@@ -77,6 +63,20 @@ Setup:
 ```
 pip install r2pipe --user
 ```
+
+### Binutils mode ###
+
+This mode uses command-line programs available in your POSIX system,
+such as `nm`, `objdump`, and `gdb`. This works for analyzing binaries
+on a system with the same ABI (for example, x86 binaries on a x86
+system).
+
+To analyze ARM binaries on a x86 system, appropriate toolchains should
+be used. Depending on the actual ARM target (32-bit or 64-bit), set
+environment variables `ARMEABI_TOOLCHAIN` and `AARCH64_TOOLCHAIN` to
+point to the correct toolchains (to generate such toolchains, consult
+the [Android NDK documentation](https://developer.android.com/ndk/guides/standalone_toolchain)
+or equivalent binary SDK distribution).
 
 ## Use ##
 
