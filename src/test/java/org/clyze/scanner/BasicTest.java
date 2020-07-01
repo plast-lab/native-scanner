@@ -21,6 +21,7 @@ public class BasicTest {
     private static String getTestNativeLibrary(String libResource, String extension) {
         try {
             Path tmpPath = Files.createTempFile("lib", extension);
+            tmpPath.toFile().deleteOnExit();
             InputStream resourceAsStream = BasicTest.class.getResourceAsStream(libResource);
             Files.copy(resourceAsStream, tmpPath, StandardCopyOption.REPLACE_EXISTING);
             return tmpPath.toString();

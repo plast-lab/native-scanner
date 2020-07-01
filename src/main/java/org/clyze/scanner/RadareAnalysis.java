@@ -38,6 +38,7 @@ public class RadareAnalysis extends BinaryAnalysis {
             return scriptPath;
         try {
             Path tmpPath = Files.createTempFile("radare", ".py");
+            tmpPath.toFile().deleteOnExit();
             InputStream resourceAsStream = BinaryAnalysis.class.getResourceAsStream(RADARE_PY_RESOURCE);
             Files.copy(resourceAsStream, tmpPath, StandardCopyOption.REPLACE_EXISTING);
             scriptPath = tmpPath;
@@ -81,6 +82,7 @@ public class RadareAnalysis extends BinaryAnalysis {
         SortedMap<Long, String> strings = super.findStrings();
         try {
             File outFile = File.createTempFile("strings-out", ".txt");
+            outFile.deleteOnExit();
             runRadare("strings", lib, outFile.getCanonicalPath());
             Consumer<ArrayList<String>> proc = (l -> {
                     String vAddrStr = l.get(0);
@@ -115,10 +117,12 @@ public class RadareAnalysis extends BinaryAnalysis {
         Map<String, Set<XRef>> xrefs = new HashMap<>();
         try {
             File stringsFile = File.createTempFile("strings", ".txt");
+            stringsFile.deleteOnExit();
             try (FileWriter writer = new FileWriter(stringsFile)) {
                 binStrings.forEach((addr, s) -> writeString(addr, s, writer));
             }
             File outFile = File.createTempFile("string-xrefs-out", ".txt");
+            outFile.deleteOnExit();
             runRadare("xrefs", lib, stringsFile.getCanonicalPath(), outFile.getCanonicalPath());
             processMultiColumnFile(outFile, LOC_MARKER, 3, l -> regXRef(l, xrefs));
         } catch (IOException ex) {
@@ -166,6 +170,7 @@ public class RadareAnalysis extends BinaryAnalysis {
     @Override
     public Section getSection(String sectionName) throws IOException {
         File outFile = File.createTempFile("sections-out", ".txt");
+        outFile.deleteOnExit();
 
         runRadare("sections", lib, outFile.getCanonicalPath());
 
@@ -199,6 +204,7 @@ public class RadareAnalysis extends BinaryAnalysis {
     public void initEntryPoints() {
         try {
             File outFile = File.createTempFile("sections-out", ".txt");
+            outFile.deleteOnExit();
             runRadare("epoints", lib, outFile.getCanonicalPath());
             Consumer<ArrayList<String>> proc = (l -> {
                 String vAddrStr = l.get(0);
@@ -223,6 +229,7 @@ public class RadareAnalysis extends BinaryAnalysis {
         Map<String, String> metadata = new HashMap<>();
         try {
             File outFile = File.createTempFile("info-out", ".txt");
+            outFile.deleteOnExit();
             runRadare("info", lib, outFile.getCanonicalPath());
             Consumer<ArrayList<String>> proc = (l -> {
                     String key = l.get(0);
