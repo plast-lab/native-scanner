@@ -165,7 +165,7 @@ public class NativeScanner {
         char[] chars = line.toCharArray();
         if (chars.length == 0)
             return false;
-        if ((chars[0] != '(') || (!line.contains(")")))
+        if ((chars[0] != '(') || (!line.contains(")") || (line.charAt(line.length()-1) == ')')))
             return false;
         for (int i = 0; i < line.length(); i++) {
             char c = chars[i];
