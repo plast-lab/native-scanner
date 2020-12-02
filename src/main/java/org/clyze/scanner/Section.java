@@ -109,7 +109,7 @@ public class Section {
         for (int offset = 0; offset < countSize; offset += wordSize) {
             long value = 0;
             for (int i = 0; i < wordSize; i++)
-                value += factors[i] * data[offset + i];
+                value += (long) factors[i] * data[offset + i];
             words.add(value);
         }
         System.err.println("Words in data section: " + words.size());
