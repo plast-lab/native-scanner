@@ -95,8 +95,12 @@ public class BuiltinAnalysis extends BinaryAnalysis {
         if (libArch == null)
             libArch = Arch.autodetectFromPathOrDefault(lib);
 
-        if (verbose)
-            sectionAddresses.forEach((k, v) -> System.out.println("#" + k + " -> section " + v));
+        if (verbose) {
+            if (sectionAddresses == null)
+                System.out.println("Empty sectionAddresses.");
+            else
+                sectionAddresses.forEach((k, v) -> System.out.println("#" + k + " -> section " + v));
+        }
 
         return new CodeInfo(metadata, libArch, libSize, sectionAddresses);
     }
