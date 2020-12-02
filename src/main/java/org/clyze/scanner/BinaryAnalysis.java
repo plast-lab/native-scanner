@@ -129,6 +129,8 @@ public abstract class BinaryAnalysis {
 
     /**
      * Returns a list of pointer values that may point to global data.
+     * @return a set of offsets/addresses
+     * @throws IOException when the data pointers section could not be processed
      */
     protected Set<Long> getGlobalDataPointers() throws IOException {
         Section data = getSection(".data");
