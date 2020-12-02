@@ -69,6 +69,7 @@ public class BasicTest {
         libraryStringsMatch(aType, new CheckPairConsumer("setName", "(Ljava/lang/String;)V"), getTestDLL());
     }
 
+    @SuppressWarnings("ConstantConditions")
     public void libraryStringsMatch(BinaryAnalysis.AnalysisType analysisType, CheckPairConsumer p, String libPath) {
         System.out.println("Testing " + libPath + " [mode: " + analysisType.name() + "]");
         boolean onlyPreciseStrings = false;

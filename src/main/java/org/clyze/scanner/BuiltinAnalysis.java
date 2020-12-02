@@ -110,6 +110,7 @@ public class BuiltinAnalysis extends BinaryAnalysis {
         return codeInfo.arch.getWordSize();
     }
 
+    @SuppressWarnings("RedundantThrows")
     @Override
     public Section getSection(String sectionName) throws IOException {
         Long sectionAddr = null;
@@ -136,6 +137,7 @@ public class BuiltinAnalysis extends BinaryAnalysis {
     }
 
     // Don't process .data sections.
+    @SuppressWarnings("RedundantThrows")
     @Override
     protected Set<Long> getGlobalDataPointers() throws IOException {
         return null;
