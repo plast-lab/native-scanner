@@ -1,5 +1,6 @@
 plugins {
     id 'application'
+    id 'java-library'
     id 'maven-publish'
     id 'net.researchgate.release' version '2.6.0'
     id "com.jfrog.bintray" version "1.8.4"
@@ -26,8 +27,8 @@ configurations.all {
 }
 
 dependencies {
-    implementation 'net.fornwall:jelf:0.4.5'
-    implementation 'io.kaitai:kaitai-struct-runtime:0.8'
+    api 'net.fornwall:jelf:0.4.5'
+    api 'io.kaitai:kaitai-struct-runtime:0.8'
     testImplementation('org.junit.jupiter:junit-jupiter-api:5.4.2')
     testRuntime('org.junit.jupiter:junit-jupiter-engine:5.4.2')
 }
