@@ -72,11 +72,10 @@ on a system with the same ABI (for example, x86 binaries on a x86
 system).
 
 To analyze ARM binaries on a x86 system, appropriate toolchains should
-be used. Depending on the actual ARM target (32-bit or 64-bit), set
-environment variables `ARMEABI_TOOLCHAIN` and `AARCH64_TOOLCHAIN` to
-point to the correct toolchains (to generate such toolchains, consult
-the [Android NDK documentation](https://developer.android.com/ndk/guides/standalone_toolchain)
-or equivalent binary SDK distribution).
+be used and the PATH should be adjusted to point to the directory
+containing tools `nm` and `objdump`. To generate such toolchains for
+Android, consult the [Android NDK
+documentation](https://developer.android.com/ndk/guides/standalone_toolchain).
 
 ## Use ##
 

@@ -15,39 +15,19 @@ public class BinutilsAnalysis extends BinaryAnalysis {
     private final static boolean check = false;
     // Demangle C++ entry points.
     private final boolean demangle;
-    // Environment variables needed to find external tools.
-    private static final String envVarARMEABI = "ARMEABI_TOOLCHAIN";
-    private static final String toolchainARMEABI = System.getenv(envVarARMEABI);
-    private static final String envVarAARCH64 = "AARCH64_TOOLCHAIN";
-    private static final String toolchainAARCH64 = System.getenv(envVarAARCH64);
 
     // The path to tool 'nm'.
-    private String nmCmd;
+    private final String nmCmd;
     // The path to tool 'objdump'.
-    private String objdumpCmd;
+    private final String objdumpCmd;
 
     BinutilsAnalysis(NativeDatabaseConsumer dbc, String lib,
                      boolean onlyPreciseNativeStrings, boolean truncateTo32Bits,
                      boolean demangle) {
         super(dbc, lib, onlyPreciseNativeStrings, truncateTo32Bits);
-
         this.demangle = demangle;
-
         this.nmCmd = "nm";
         this.objdumpCmd = "objdump";
-        if (codeInfo.arch == Arch.ARMEABI) {
-            if (toolchainARMEABI != null) {
-                this.nmCmd = toolchainARMEABI + "/bin/nm";
-                this.objdumpCmd = toolchainARMEABI + "/bin/objdump";
-            } else
-                System.err.println("No ARMEABI toolchain found, set " + envVarARMEABI + ". Using system nm/objdump.");
-        } else if (codeInfo.arch == Arch.AARCH64) {
-            if (toolchainAARCH64 != null) {
-                this.nmCmd = toolchainAARCH64 + "/bin/nm";
-                this.objdumpCmd = toolchainAARCH64 + "/bin/objdump";
-            } else
-                System.err.println("No AARCH64 toolchain found, set " + envVarAARCH64 + ". Using system nm/objdump.");
-        }
 
         if (debug) {
             System.out.println("== Native scanner paths ==");
