@@ -22,6 +22,8 @@ jobs:
         java-version: 1.8
     - name: Install Radare2
       run: sudo apt-get install radare2
+    - name: Install r2pipe
+      run: sudo apt-get install python-pip && pip install r2pipe
     - name: Grant execute permission for gradlew
       run: chmod +x gradlew
     - name: Test with Gradle
