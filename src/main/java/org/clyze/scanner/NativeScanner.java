@@ -401,7 +401,9 @@ public class NativeScanner {
         String tmpName = sb.toString();
         File libTmpFile = new File(tmpDir, tmpName);
         libTmpFile.deleteOnExit();
-        copy(zipFile.getInputStream(entry), libTmpFile.toPath());
+        long bytesCopied = copy(zipFile.getInputStream(entry), libTmpFile.toPath());
+        if (debug)
+            System.out.println("Number of bytes copied: " + bytesCopied);
         return libTmpFile;
     }
 
