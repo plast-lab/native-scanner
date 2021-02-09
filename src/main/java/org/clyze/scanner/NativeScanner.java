@@ -356,7 +356,9 @@ public class NativeScanner {
         boolean isLibsZSTD = entryName.endsWith("libs.zstd");
 
         if (isSO || isDylib || isDLL || isLibsXZS || isLibsZSTD) {
-            File libTmpFile = extractZipEntryAsFile("native-lib", file, entry, entryName);
+            // Replace ".." to guard against bad archives accessing the filesystem.
+            String entryNameSanitized = entryName.replaceAll("..", "_");
+            File libTmpFile = extractZipEntryAsFile("native-lib", file, entry, entryNameSanitized);
             String libPath = libTmpFile.getCanonicalPath();
             // Handle some special formats.
             if (isLibsXZS)
