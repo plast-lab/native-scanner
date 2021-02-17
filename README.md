@@ -1,3 +1,5 @@
+[![Build Status](https://github.com/plast-lab/native-scanner/workflows/Java%20CI%20with%20Gradle/badge.svg?branch=master)](https://github.com/plast-lab/native-scanner/actions)
+
 This repository hosts the native scanner, a library that searches for
 strings in binary libraries, to inform static analyses. Read more about
 this library in paper ["Identifying Java Calls in Native Code via Binary Scanning"](https://gfour.github.io/files/native-scanner-issta2020.pdf).
