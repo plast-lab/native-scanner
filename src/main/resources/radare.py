@@ -11,7 +11,7 @@ def main():
         usage()
 
     mode = sys.argv[1]
-    r = r2pipe.open(sys.argv[2], flags=['-e anal.timeout=600'])
+    r = r2pipe.open(sys.argv[2], flags=['-e anal.timeout=600 -e io.cache=true'])
     if mode == 'strings' and argsNum == 4:
         with open(sys.argv[3], 'w') as out:
             findStrings(r, out)
