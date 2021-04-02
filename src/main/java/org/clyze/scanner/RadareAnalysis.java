@@ -55,7 +55,7 @@ public class RadareAnalysis extends BinaryAnalysis {
         String script = getScript().toString();
 
         List<String> args0 = new LinkedList<>();
-        args0.add("python");
+        args0.add("python3");
         args0.add(script);
         args0.addAll(Arrays.asList(args));
 

@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 import sys
 import r2pipe
 import re
@@ -75,8 +75,8 @@ def xrefs(r, strings, out):
         refs = rCmd(r, 'axt ' + addr)
         for ref in refs.splitlines():
             refParts = ref.split()
-            func = refParts[0].encode('utf-8')
-            codeAddr = refParts[1].encode('utf-8')
+            func = utf8(refParts[0])
+            codeAddr = utf8(refParts[1])
             info = 'STRING_LOC:' + func + '\t' + codeAddr + '\t' + s
             if (debug):
                 print(info)
@@ -88,6 +88,9 @@ def stripEOL(s):
     else:
         return s
 
+def utf8(s):
+    return s.encode('utf-8').decode()
+
 # Strings mode:  list strings in the binary.
 def findStrings(r, out):
     print('Reading binary strings...')
@@ -98,7 +101,7 @@ def findStrings(r, out):
 def stringProc(lineParts):
         vaddr = lineParts[2]
         string = ''.join(lineParts[7:])
-        return 'STRING:' + vaddr + '\t' + string.encode('utf-8')
+        return 'STRING:' + vaddr + '\t' + utf8(string)
 
 # Sections mode:  list binary sections.
 def sections(r, out):
@@ -109,7 +112,7 @@ def sectionProc(lineParts):
     offset = lineParts[1]
     size = lineParts[2]
     vaddr = lineParts[3]
-    sectionName = ''.join(lineParts[6:]).encode('utf-8')
+    sectionName = utf8(''.join(lineParts[6:]))
     return 'SECTION:' + sectionName + '\t' + vaddr + '\t' + size + '\t' + offset
 
 # Sections mode: list binary sections.
@@ -137,7 +140,7 @@ def processTable(r, out, cmd, IGNORE_FIRST, COLUMNS, proc):
     flagCounter = 0
     for stringLine in stringLines.splitlines():
         if debug:
-            print stringLine.encode('utf-8')
+            print(utf8(stringLine))
         flagCounter += 1
         if flagCounter < IGNORE_FIRST:
             continue;
@@ -153,6 +156,7 @@ def processTable(r, out, cmd, IGNORE_FIRST, COLUMNS, proc):
             out.write(info + '\n')
         except:
             if debug:
+                print("Error:", sys.exc_info()[0])
                 try:
                     print("IGNORED: " + stringLine)
                 except:
