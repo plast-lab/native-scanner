@@ -50,6 +50,8 @@ public class RadareAnalysis extends BinaryAnalysis {
 
     }
     private static void runRadare(String... args) {
+        checkRadareSupport();
+
         String script = getScript().toString();
 
         List<String> args0 = new LinkedList<>();
@@ -320,6 +322,23 @@ public class RadareAnalysis extends BinaryAnalysis {
                     values.add(line);
                     proc.accept(values);
                 }
+            }
+        }
+    }
+
+    private static void checkRadareSupport() {
+        ProcessBuilder radareBuilder = new ProcessBuilder(new String[] { "r2", "-v" });
+        System.out.println("Radare command line: " + radareBuilder.command());
+
+        List<String> output = NativeScanner.runCommand(radareBuilder);
+        if (output.size() > 0) {
+            String first = output.get(0);
+            String PREFIX = "radare2 ";
+            int PREFIX_LEN = PREFIX.length();
+            if (first.startsWith(PREFIX)) {
+                String ver = first.substring(PREFIX_LEN, first.indexOf(" ", PREFIX_LEN));
+                if (!ver.startsWith("3."))
+                    System.out.println("WARNING: Radare2 version != 3 may not be supported.");
             }
         }
     }
