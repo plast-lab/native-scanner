@@ -357,7 +357,7 @@ public class NativeScanner {
 
         if (isSO || isDylib || isDLL || isLibsXZS || isLibsZSTD) {
             // Replace ".." to guard against bad archives accessing the filesystem.
-            String entryNameSanitized = entryName.replaceAll("..", "_");
+            String entryNameSanitized = entryName.replaceAll("\\.\\.", "_");
             File libTmpFile = extractZipEntryAsFile("native-lib", file, entry, entryNameSanitized);
             String libPath = libTmpFile.getCanonicalPath();
             // Handle some special formats.
