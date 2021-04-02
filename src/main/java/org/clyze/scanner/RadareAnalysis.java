@@ -327,19 +327,23 @@ public class RadareAnalysis extends BinaryAnalysis {
     }
 
     private static void checkRadareSupport() {
-        ProcessBuilder radareBuilder = new ProcessBuilder(new String[] { "r2", "-v" });
-        System.out.println("Radare command line: " + radareBuilder.command());
+        try {
+            ProcessBuilder radareBuilder = new ProcessBuilder(new String[] { "r2", "-v" });
+            System.out.println("Radare command line: " + radareBuilder.command());
 
-        List<String> output = NativeScanner.runCommand(radareBuilder);
-        if (output.size() > 0) {
-            String first = output.get(0);
-            String PREFIX = "radare2 ";
-            int PREFIX_LEN = PREFIX.length();
-            if (first.startsWith(PREFIX)) {
-                String ver = first.substring(PREFIX_LEN, first.indexOf(" ", PREFIX_LEN));
-                if (!ver.startsWith("3."))
-                    System.out.println("WARNING: Radare2 version != 3 may not be supported.");
+            List<String> output = NativeScanner.runCommand(radareBuilder);
+            if (output.size() > 0) {
+                String first = output.get(0);
+                String PREFIX = "radare2 ";
+                int PREFIX_LEN = PREFIX.length();
+                if (first.startsWith(PREFIX)) {
+                    String ver = first.substring(PREFIX_LEN, first.indexOf(" ", PREFIX_LEN));
+                    if (!ver.startsWith("3.") && !ver.startsWith("4."))
+                        System.out.println("WARNING: Radare2 version != {3, 4} may not be supported.");
+                }
             }
+        } catch (Exception ex) {
+            System.out.println("WARNING: could not check Radare2 version: " + ex.getMessage());
         }
     }
 }
