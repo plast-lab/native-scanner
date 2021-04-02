@@ -54,7 +54,8 @@ repository via `./gradlew publishToMavenLocal`.
 
 ### Radare2 mode ###
 
-This mode uses the [Radare2](https://rada.re/) reverse engineering framework for portability.
+This mode uses the [Radare2](https://rada.re/) reverse engineering
+framework for portability. Tested with Radare 3.5.0 and 4.5.0.
 
 Setup:
 
