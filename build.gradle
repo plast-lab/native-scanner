@@ -3,7 +3,7 @@ plugins {
     id 'java-library'
     id 'maven-publish'
     id 'net.researchgate.release' version '2.6.0'
-    id "com.jfrog.bintray" version "1.8.4"
+    id 'com.jfrog.artifactory' version '4.24.21'
 }
 
 sourceCompatibility = "1.8"
@@ -89,28 +89,17 @@ release {
 
 afterReleaseBuild.dependsOn publish
 
-// Upload to bintray with:
-//   ./gradlew clean build bintrayUpload --info
-// Needs properties: bintray_user, bintray_key.
-if (project.hasProperty('bintray_user') && project.hasProperty('bintray_key')) {
-    bintray {
-        user = bintray_user
-        key = bintray_key
-        publications = ['mavenJava']
-        configurations = ['archives']
-        pkg {
-            repo = 'plast-lab'
-            name = 'native-scanner'
-            desc = 'Native code scanner for Java programs using JNI.'
-            licenses = ['UPL-1.0']
-            labels = ['java', 'jni']
-            vcsUrl = 'https://github.com/plast-lab/native-scanner.git'
-            version {
-                name = project.version
-                released = new Date()
-                vcsTag = project.version
-            }
-        }
-    }
-}
+// To configure, set jfrog_user/jfrog_password in [~/.gradle,.]/gradle.properties.
+// Upload with: ./gradlew artifactoryPublish
+artifactoryPublish {
+    skip = false //Skip build info analysis and publishing (false by default)
+    contextUrl = 'http://clyze.jfrog.io/artifactory'
+    publications ('mavenJava')
+    properties = ['qa.level': 'basic']
+    clientConfig.publisher.repoKey = 'default-maven-local'
+    clientConfig.publisher.username = jfrog_user
+    clientConfig.publisher.password = jfrog_password
 
+    // Minimum file size in KB for which the plugin performs checksum deploy optimization. Default: 10. Set to 0 to disable uploading files with checksum that already exists in Artifactory.
+    clientConfig.publisher.minChecksumDeploySizeKb = 10
+}
