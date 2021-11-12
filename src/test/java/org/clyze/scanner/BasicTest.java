@@ -1,9 +1,9 @@
 package org.clyze.scanner;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -20,11 +20,10 @@ public class BasicTest {
 
     private static String getTestNativeLibrary(String libResource, String extension) {
         try {
-            Path tmpPath = Files.createTempFile("lib", extension);
-            tmpPath.toFile().deleteOnExit();
+            File tmpFile = NativeScanner.createTempFile("lib", extension);
             InputStream resourceAsStream = BasicTest.class.getResourceAsStream(libResource);
-            Files.copy(resourceAsStream, tmpPath, StandardCopyOption.REPLACE_EXISTING);
-            return tmpPath.toString();
+            Files.copy(resourceAsStream, tmpFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
+            return tmpFile.toString();
         } catch (IOException ex) {
             ex.printStackTrace();
             throw new RuntimeException("Error: could not extract " + libResource);

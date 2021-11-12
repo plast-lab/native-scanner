@@ -426,6 +426,11 @@ public class NativeScanner {
         return Files.copy(in, target, options);
     }
 
+    public static File createTempFile(String prefix, String suffix) throws IOException {
+        File f = File.createTempFile(prefix, suffix);
+        f.deleteOnExit();
+        return f;
+    }
 }
 
 class SymbolInfo {

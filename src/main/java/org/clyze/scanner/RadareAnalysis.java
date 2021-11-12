@@ -83,8 +83,7 @@ public class RadareAnalysis extends BinaryAnalysis {
         System.out.println("Finding strings with Radare2...");
         SortedMap<Long, String> strings = super.findStrings();
         try {
-            File outFile = File.createTempFile("strings-out", ".txt");
-            outFile.deleteOnExit();
+            File outFile = NativeScanner.createTempFile("strings-out", ".txt");
             runRadare("strings", lib, outFile.getCanonicalPath());
             Consumer<ArrayList<String>> proc = (l -> {
                     String vAddrStr = l.get(0);
@@ -118,13 +117,11 @@ public class RadareAnalysis extends BinaryAnalysis {
 
         Map<String, Set<XRef>> xrefs = new HashMap<>();
         try {
-            File stringsFile = File.createTempFile("strings", ".txt");
-            stringsFile.deleteOnExit();
+            File stringsFile = NativeScanner.createTempFile("strings", ".txt");
             try (FileWriter writer = new FileWriter(stringsFile)) {
                 binStrings.forEach((addr, s) -> writeString(addr, s, writer));
             }
-            File outFile = File.createTempFile("string-xrefs-out", ".txt");
-            outFile.deleteOnExit();
+            File outFile = NativeScanner.createTempFile("string-xrefs-out", ".txt");
             runRadare("xrefs", lib, stringsFile.getCanonicalPath(), outFile.getCanonicalPath());
             processMultiColumnFile(outFile, LOC_MARKER, 3, l -> regXRef(l, xrefs));
         } catch (IOException ex) {
@@ -171,8 +168,7 @@ public class RadareAnalysis extends BinaryAnalysis {
 
     @Override
     public Section getSection(String sectionName) throws IOException {
-        File outFile = File.createTempFile("sections-out", ".txt");
-        outFile.deleteOnExit();
+        File outFile = NativeScanner.createTempFile("sections-out", ".txt");
 
         runRadare("sections", lib, outFile.getCanonicalPath());
 
@@ -205,8 +201,7 @@ public class RadareAnalysis extends BinaryAnalysis {
     @Override
     public void initEntryPoints() {
         try {
-            File outFile = File.createTempFile("sections-out", ".txt");
-            outFile.deleteOnExit();
+            File outFile = NativeScanner.createTempFile("sections-out", ".txt");
             runRadare("epoints", lib, outFile.getCanonicalPath());
             Consumer<ArrayList<String>> proc = (l -> {
                 String vAddrStr = l.get(0);
@@ -230,8 +225,7 @@ public class RadareAnalysis extends BinaryAnalysis {
     protected synchronized CodeInfo getNativeCodeInfo() {
         Map<String, String> metadata = new HashMap<>();
         try {
-            File outFile = File.createTempFile("info-out", ".txt");
-            outFile.deleteOnExit();
+            File outFile = NativeScanner.createTempFile("info-out", ".txt");
             runRadare("info", lib, outFile.getCanonicalPath());
             Consumer<ArrayList<String>> proc = (l -> {
                     String key = l.get(0);
